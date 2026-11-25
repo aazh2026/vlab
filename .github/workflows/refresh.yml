@@ -1,0 +1,71 @@
+name: Daily refresh
+
+# 每天重抓一次行情并重建面板，把最新结果提交回 docs/。
+#
+# 为什么要自动更新：
+#   1) 这个项目的内容就是"截至今天的真实数据" —— 面板停在 2026-11-25
+#      就会慢慢变成一份过期的截图。
+#   2) 仓库保持活跃本身就是被看见的方式之一。
+#
+# 诚实说明：这条 workflow 只会在**确实有数据变化**时提交 commit，
+# 不会为了"看起来活跃"而制造空提交。如果抓数失败，它会失败退出，
+# 不会用旧数据覆盖线上结果。
+
+on:
+  schedule:
+    # 每日 05:50 UTC（北京时间 13:50）—— 避开美股盘中与 A 股开盘时段，
+    # 抓到的都是已收盘的日线。
+    - cron: "50 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    name: fetch quotes and rebuild dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fetch latest quotes
+        id: fetch
+        run: |
+          set -o pipefail
+          PYTHONPATH=src python3 -m vlab fetch 2>&1 | tee /tmp/fetch.log
+          # 部分标的失败是可以接受的（例如某只 ETF 当日无数据），
+          # 但完全没抓到数据必须失败 —— 否则会用旧数据重建出"新"结果。
+          if [ ! -d data ] || [ -z "$(ls -A data 2>/dev/null)" ]; then
+            echo "::error::没有抓到任何数据，中止本次刷新（保留线上结果）"
+            exit 1
+          fi
+
+      - name: Run regression tests
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Rebuild the dashboard
+        run: |
+          python3 scripts/build_site.py
+          python3 scripts/verify_site.py
+
+      - name: Commit updated artifacts if anything changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --cached --quiet; then
+            echo "数据没有变化 —— 不提交（不制造空提交）"
+            exit 0
+          fi
+          NEW_DATE=$(python3 -c "import json;print(json.load(open('docs/report.json')).get('generated_at','unknown'))")
+          git commit -m "chore: daily data refresh (${NEW_DATE})"
+          git push origin main
+          echo "已提交每日更新：${NEW_DATE}"
