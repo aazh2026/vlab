@@ -432,10 +432,20 @@ The project also enforces **two separate evaluation windows** so that results ar
 
 Across an 18-year window containing the 2008 crisis, the tested allocation holds drawdown to **-9.96%**, versus **-52.89%** for the CSI 300 ETF and **-47.27%** for the S&P 500. The price is **5.7 percentage points of annual return** (4.77% vs 10.56%).
 
+Two honest negatives are documented rather than hidden: the gold-banding overlay adds only ~0.3pp of CAGR, and the MA200 trend-risk layer measurably does nothing.
+
+## Cash vs house
+
+The project was originally built to answer one question: **for the same money, is buying a flat better than holding assets?**
+
+`src/vlab/property.py` models it: equal-principal-and-interest amortisation, rent tax, vacancy, management fees, buy and sell costs, and a monthly-compounded price path. It reports the break-even rent, the break-even price growth, the one-off price drop that would make holding break even, and a price × rent × rate sensitivity grid. A conclusion only counts as robust when the entire grid has one sign.
+
+**It ingests no listing or transaction data.** Asking prices are not transaction prices, and loan terms and taxes must come from bank pre-approval and registered contracts. The module gives you a calculation framework and a sensitivity analysis — not a prediction.
+
 ## Quick start
 
 ```bash
-python3 -m unittest discover -s tests -v      # tests, no deps, no network
+python3 -m unittest discover -s tests -v      # 52 tests, no deps, no network
 PYTHONPATH=src python3 -m vlab fetch          # download quotes (~7MB, cached)
 PYTHONPATH=src python3 -m vlab report         # build the report
 PYTHONPATH=src python3 -m vlab serve          # dashboard on :8765
