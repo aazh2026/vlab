@@ -70,7 +70,28 @@ def find_chrome() -> str:
     return ""
 
 
+def count_tests() -> int:
+    """数出仓库里真实存在的测试数量。
+
+    预览图上的测试数之前是写死的 17，仓库实际已经有 52 个 ——
+    过期数字正是本项目要消灭的那类错误，所以这里改成自动读取。
+    """
+    total = 0
+    tests_dir = os.path.join(ROOT, "tests")
+    for name in sorted(os.listdir(tests_dir)):
+        if not (name.startswith("test_") and name.endswith(".py")):
+            continue
+        with open(os.path.join(tests_dir, name), encoding="utf-8") as f:
+            for line in f:
+                s = line.strip()
+                if s.startswith("def test_") or s.startswith("async def test_"):
+                    total += 1
+    return total
+
+
 def build_svg() -> str:
+    n = count_tests()
+    TESTS = f"{n}/{n}"
     # 图表区域
     cx, cy, cw, chh = 660, 96, 552, 330
     ymin, ymax = 0.85, 1.85
@@ -147,7 +168,7 @@ def build_svg() -> str:
   <text x="76" y="374" fill="{TX3}" font-size="12" letter-spacing="0.8" font-weight="600"
         font-family="Helvetica,Arial,sans-serif">TESTS PASSING</text>
   <text x="76" y="412" fill="{GREEN}" font-size="32" font-weight="700"
-        font-family="Helvetica,Arial,sans-serif">17/17</text>
+        font-family="Helvetica,Arial,sans-serif">{TESTS}</text>
 
   <text x="196" y="374" fill="{TX3}" font-size="12" letter-spacing="0.8" font-weight="600"
         font-family="Helvetica,Arial,sans-serif">DEPENDENCIES</text>
