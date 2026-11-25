@@ -12,6 +12,12 @@
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
 [![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://aazh2026.github.io/vlab/)
 
+<p align="center">
+  <img src=".github/assets/demo.webp" width="820" alt="vlab dashboard demo: dual windows, KPIs, equity curve, drawdown curve, yearly returns and sortable performance table" />
+</p>
+
+<p align="center"><sub>18 秒看完整面板：双窗口切换 → 8 个 KPI → 净值/回撤/年度收益 → 可排序绩效表。<br/>18-second tour: dual windows, 8 KPIs, equity &amp; drawdown curves, yearly returns, sortable performance table.</sub></p>
+
 [English](#english) · [中文](#中文)
 
 </div>
