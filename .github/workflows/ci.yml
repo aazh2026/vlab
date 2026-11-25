@@ -41,3 +41,22 @@ jobs:
           test -f docs/report.json
           test -f docs/DISCLAIMER.txt
           python3 scripts/verify_site.py
+
+  package:
+    name: build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build wheel and sdist
+        run: |
+          python3 -m pip install --upgrade pip build
+          python3 -m build
+      - name: Verify zero runtime dependencies and packaged dashboard
+        run: |
+          python3 -m pip install --no-index --find-links dist vlab
+          python3 -c "import vlab, vlab.web, os; assert vlab.__version__; assert os.path.exists(os.path.join(os.path.dirname(vlab.web.__file__), 'index.html')); print('install ok')"
+          vlab --help

@@ -215,6 +215,18 @@ AssertionError: 23.65 not less than 0.025
 
 ## 快速开始 / Quick start
 
+**方式一：pip 安装（零依赖，Python 3.9+）**
+
+```bash
+pip install vlab
+
+vlab fetch        # 抓取行情数据（约 7MB，缓存到 data/）
+vlab report       # 生成回测报告
+vlab serve        # 启动本地面板 → http://127.0.0.1:8765
+```
+
+**方式二：从源码运行（无需安装，无需联网）**
+
 ```bash
 git clone https://github.com/aazh2026/vlab.git
 cd vlab
@@ -231,6 +243,9 @@ PYTHONPATH=src python3 -m vlab report
 # 启动本地面板 → http://127.0.0.1:8765
 PYTHONPATH=src python3 -m vlab serve
 ```
+
+> 两种方式产出的结果完全一致——引擎、指标、面板是同一份代码，
+> 差别只在于是从 wheel 安装还是从工作区运行。
 
 **在线体验**：<https://aazh2026.github.io/vlab/>
 
