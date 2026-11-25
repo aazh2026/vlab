@@ -11,6 +11,7 @@
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
 [![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://postcodeengineering.com/vlab/)
+[![Release](https://img.shields.io/github/v/release/aazh2026/vlab.svg)](https://github.com/aazh2026/vlab/releases/latest)
 
 <p align="center">
   <img src=".github/assets/demo.webp" width="820" alt="vlab dashboard demo: dual windows, KPIs, equity curve, drawdown curve, yearly returns and sortable performance table" />
@@ -222,17 +223,7 @@ AssertionError: 23.65 not less than 0.025
 
 ## 快速开始 / Quick start
 
-**方式一：pip 安装（零依赖，Python 3.9+）**
-
-```bash
-pip install vlab
-
-vlab fetch        # 抓取行情数据（约 7MB，缓存到 data/）
-vlab report       # 生成回测报告
-vlab serve        # 启动本地面板 → http://127.0.0.1:8765
-```
-
-**方式二：从源码运行（无需安装，无需联网）**
+**方式一：从源码运行（无需安装，无需联网）**
 
 ```bash
 git clone https://github.com/aazh2026/vlab.git
@@ -249,6 +240,16 @@ PYTHONPATH=src python3 -m vlab report
 
 # 启动本地面板 → http://127.0.0.1:8765
 PYTHONPATH=src python3 -m vlab serve
+```
+
+**方式二：pip 安装（零依赖，Python 3.9+）**
+
+包已构建并由 CI 校验（wheel + sdist、`dependencies = []`），**PyPI 发布正在走流程中**，
+上架后即可：
+
+```bash
+pip install vlab
+vlab fetch && vlab report && vlab serve
 ```
 
 > 两种方式产出的结果完全一致——引擎、指标、面板是同一份代码，
