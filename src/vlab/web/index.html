@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vlab · 资产配置回测实验室</title>
+<meta name="description" content="零依赖的资产配置回测实验室 / Zero-dependency portfolio backtesting lab. 研究与教学用途，不构成投资建议。">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<style>
+:root{
+  --bg:#0b0e14; --panel:#131822; --panel2:#1a2130; --line:#232b3b;
+  --tx:#e6e9ef; --tx2:#9aa4b8; --tx3:#5d6880;
+  --up:#3ddc97; --dn:#ff6b6b; --acc:#4c9aff; --gold:#ffb84d; --warn:#ff9f43;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--tx);
+  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1360px;margin:0 auto;padding:0 20px 80px}
+a{color:var(--acc);text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+
+/* ---------- disclaimer ---------- */
+.disclaimer{
+  background:linear-gradient(180deg,#2a1f0c,#221a0b);
+  border-bottom:1px solid #4a3a14; color:#ffd08a;
+  padding:11px 0; font-size:13px; line-height:1.5;
+}
+.disclaimer .wrap{display:flex;gap:10px;align-items:flex-start}
+.disclaimer .ico{flex:0 0 auto;font-size:16px;line-height:1.35}
+.disclaimer b{color:#ffb84d}
+.disclaimer .en{color:#c9a76a;margin-top:3px;font-size:12px}
+
+/* ---------- header ---------- */
+header{padding:26px 0 18px;border-bottom:1px solid var(--line)}
+.hd-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+h1{margin:0 0 6px;font-size:26px;letter-spacing:-.4px;font-weight:650}
+h1 .tag{font-size:12px;font-weight:500;color:var(--tx2);margin-left:10px;letter-spacing:0}
+.sub{color:var(--tx2);font-size:13px;margin:0;max-width:760px}
+.hd-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+button,.btn{
+  background:var(--panel2); color:var(--tx); border:1px solid var(--line);
+  padding:7px 13px; border-radius:7px; cursor:pointer; font-size:13px;
+  font-family:inherit; transition:.15s;
+}
+button:hover,.btn:hover{border-color:var(--acc);color:#fff}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+button.ghost{background:transparent}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;gap:8px;margin:20px 0 4px;flex-wrap:wrap}
+.tab{padding:8px 15px;border-radius:8px;border:1px solid var(--line);cursor:pointer;
+  background:var(--panel);font-size:13px;transition:.15s}
+.tab:hover{border-color:var(--acc)}
+.tab.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+.tab .win{opacity:.75;font-size:12px;margin-left:6px}
+
+/* ---------- note ---------- */
+.note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--warn);
+  border-radius:6px;padding:10px 14px;margin:14px 0;color:var(--tx2);font-size:12.5px}
+.note b{color:var(--tx)}
+
+/* ---------- kpi ---------- */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:10px;margin:18px 0}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+.kpi .k{font-size:11.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px}
+.kpi .v{font-size:23px;font-weight:650;margin-top:5px;font-variant-numeric:tabular-nums}
+.kpi .x{font-size:11.5px;color:var(--tx3);margin-top:3px}
+.pos{color:var(--up)} .neg{color:var(--dn)} .flat{color:var(--tx2)} .acc{color:var(--acc)}
+
+/* ---------- panel ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:16px 0}
+.panel h2{margin:0 0 3px;font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel h2 .en{font-size:11.5px;color:var(--tx3);font-weight:400}
+.panel .cap{color:var(--tx3);font-size:12px;margin:0 0 12px}
+
+/* ---------- legend ---------- */
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.lg{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:6px;
+  border:1px solid var(--line);cursor:pointer;font-size:12px;background:var(--panel2);
+  transition:.15s;user-select:none}
+.lg:hover{border-color:var(--acc)}
+.lg.off{opacity:.34}
+.lg .sw{width:13px;height:3px;border-radius:2px}
+.lg .sw.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px);height:3px}
+.lg.core{border-color:#3a4a68;background:#1c2740}
+.lg.core.off{background:var(--panel2)}
+
+/* ---------- svg ---------- */
+svg{display:block;width:100%;overflow:visible}
+svg text{font-family:inherit}
+
+/* ---------- table ---------- */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:900px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--tx3);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;
+  cursor:pointer;user-select:none;position:sticky;top:0;background:var(--panel);z-index:2}
+th:hover{color:var(--acc)}
+th:first-child,td:first-child{text-align:left}
+th.sorted::after{content:" ▾";color:var(--acc)}
+tr.core td{background:rgba(76,154,255,.07)}
+tr.core td:first-child{font-weight:600}
+tr:hover td{background:rgba(255,255,255,.03)}
+td.num{font-variant-numeric:tabular-nums}
+.chip{display:inline-block;padding:1px 7px;border-radius:20px;font-size:10.5px;
+  background:#243049;color:#9db8e8;margin-left:6px;vertical-align:middle}
+
+/* ---------- misc grids ---------- */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+@media(max-width:860px){.grid2{grid-template-columns:1fr}}
+
+.item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);gap:12px}
+.item:last-child{border-bottom:none}
+.item .l{font-size:13px}
+.item .l small{display:block;color:var(--tx3);font-size:11.5px}
+.item .r{font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
+.bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;border-radius:3px}
+
+.bug{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+.bug .t{font-size:13px;font-weight:600;margin-bottom:5px}
+.bug .t .ok{color:var(--up);margin-right:5px}
+.bug .d{color:var(--tx2);font-size:12.5px}
+.bug .d .en{display:block;color:var(--tx3);font-size:11.5px;margin-top:3px}
+
+.meth{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.meth:last-child{border-bottom:none}
+.meth .st{flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:6px}
+.st.pass{background:var(--up)} .st.fail{background:var(--dn)} .st.warn{background:var(--warn)}
+.meth .m{flex:1}
+.meth .m .t{font-size:13px;font-weight:500}
+.meth .m .d{color:var(--tx2);font-size:12.5px;margin-top:2px}
+.meth .m .d .en{display:block;color:var(--tx3);font-size:11.5px}
+
+footer{border-top:1px solid var(--line);margin-top:36px;padding:22px 0 0;color:var(--tx3);font-size:12px}
+footer a{color:var(--tx2)}
+.empty{color:var(--tx3);padding:26px;text-align:center;font-size:13px}
+.loading{color:var(--tx3);padding:60px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="disclaimer">
+  <div class="wrap">
+    <span class="ico">⚠️</span>
+    <div>
+      <b>免责声明</b>：本项目为量化研究与教学用途，所有结果均为基于历史数据的回测，<b>不预示未来收益，不构成任何投资建议、要约或推荐</b>。历史表现不代表未来表现，投资有风险，决策需自负。
+      <div class="en"><b>Disclaimer</b>: For research and education only. All results are backtests on historical data. Past performance does not predict future returns; nothing here is investment advice, an offer, or a recommendation. Investing involves risk — you are solely responsible for your own decisions.</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="hd-row">
+      <div>
+        <h1>📊 vlab <span class="tag">资产配置回测实验室 · Portfolio Backtesting Lab</span></h1>
+        <p class="sub">零第三方依赖 · 双窗口诚实口径 · 三个历史缺陷各有回归测试钉死 · 全部数字可复现<br>
+        Zero third-party dependencies · Two honest evaluation windows · Every historical bug pinned by a regression test.</p>
+      </div>
+      <div class="hd-actions">
+        <button id="btn-lang" class="ghost">EN</button>
+        <button id="btn-rebuild">重建数据 Rebuild</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="app"><div class="loading">加载中… Loading…</div></div>
+
+  <footer>
+    <div><b>vlab</b> · MIT License · 数据源：腾讯 ifzq / 新浪公开行情接口 · 交易成本：佣金 5bp + 滑点 3bp</div>
+    <div style="margin-top:6px">Data: Tencent ifzq / Sina public quotes. Costs: 5bp commission + 3bp slippage. <b>回测不预示未来收益，不构成投资建议。</b></div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* ===================================================================
+   vlab dashboard — zero dependency, hand-drawn SVG, no CDN.
+   Data source: /api/report  (see vlab.web.server)
+   =================================================================== */
+
+const S = {
+  lang: "zh",        // "zh" | "en"
+  win: "A",
+  data: null,
+  hidden: new Set(), // hidden strategy keys
+  sortKey: "cagr",
+  sortDir: -1,
+  focus: "steve_gold",
+};
+
+const PAL = ["#4c9aff","#3ddc97","#ffb84d","#ff6b6b","#a78bfa","#4dd0e1",
+             "#f472b6","#84cc16","#fb923c","#e879f9","#2dd4bf","#facc15",
+             "#60a5fa","#f87171"];
+const CORE = new Set(["steve","steve_gold"]);
+
+const $ = s => document.querySelector(s);
+const el = (t, cls, txt) => { const e = document.createElement(t);
+  if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const SVGNS = "http://www.w3.org/2000/svg";
+const svg = (t, attrs) => { const e = document.createElementNS(SVGNS, t);
+  for (const k in (attrs||{})) e.setAttribute(k, attrs[k]); return e; };
+
+/* ---------- number formatting ---------- */
+const f2 = v => (v == null || isNaN(v)) ? "—" : (Math.abs(v) < 1e-9 ? "0.00" : v.toFixed(2));
+/* engine metrics are decimals (0.0838 = 8.38%) */
+const pct  = v => (v == null || isNaN(v)) ? "—" : (v * 100).toFixed(2) + "%";
+/* already-percent values */
+const pctR = v => (v == null || isNaN(v)) ? "—" : v.toFixed(2) + "%";
+const money = v => (v == null || isNaN(v)) ? "—" :
+  Math.round(v).toLocaleString("en-US");
+const sgn = v => v > 0 ? "pos" : (v < 0 ? "neg" : "flat");
+
+function t(zh, en) { return S.lang === "zh" ? zh : en; }
+
+/* ===================================================================
+   Data loading
+   =================================================================== */
+async function load() {
+  const app = $("#app");
+  try {
+    const r = await fetch("api/report", { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    S.data = await r.json();
+    render();
+  } catch (e) {
+    app.innerHTML = "";
+    const box = el("div", "panel");
+    box.appendChild(el("div", "empty",
+      "无法加载报告 / Failed to load report: " + e.message +
+      " — 请先运行 python3 -m vlab report"));
+    app.appendChild(box);
+  }
+}
+
+/* ===================================================================
+   Render
+   =================================================================== */
+function render() {
+  const app = $("#app");
+  app.innerHTML = "";
+  const D = S.data;
+  if (!D || !D.windows || !D.windows[S.win]) { app.appendChild(el("div","empty","no data")); return; }
+  const W = D.windows[S.win];
+
+  /* tabs */
+  const tabs = el("div", "tabs");
+  Object.keys(D.windows).forEach(k => {
+    const w = D.windows[k];
+    const b = el("div", "tab" + (k === S.win ? " on" : ""));
+    b.innerHTML = (k === S.win ? "● " : "") +
+      escapeHtml(w.label) + '<span class="win">' + w.start.slice(0,4) + "–" + w.end.slice(0,4) + "</span>";
+    b.onclick = () => { S.win = k; S.hidden.clear(); render(); };
+    tabs.appendChild(b);
+  });
+  app.appendChild(tabs);
+
+  /* window note */
+  const note = el("div", "note");
+  note.innerHTML = "<b>" + (S.lang === "zh" ? "口径说明" : "Methodology note") + "：</b>" +
+    escapeHtml(S.lang === "zh" ? W.note : W.note_en || W.note);
+  app.appendChild(note);
+
+  /* KPI */
+  const focus = W.strategies[S.focus] || Object.values(W.strategies)[0];
+  app.appendChild(buildKPI(focus));
+
+  /* equity curve */
+  app.appendChild(buildCurvePanel(W));
+
+  /* drawdown */
+  app.appendChild(buildDDPanel(W));
+
+  /* yearly */
+  app.appendChild(buildYearlyPanel(focus));
+
+  /* performance table */
+  app.appendChild(buildTable(W));
+
+  /* allocation + gold bands */
+  app.appendChild(buildAllocationPanel(D));
+
+  /* bugs + methodology */
+  app.appendChild(buildBugsPanel(D));
+  app.appendChild(buildMethodPanel(D));
+}
+
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c =>
+    ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* ---------------- KPI ---------------- */
+function buildKPI(focus) {
+  const box = el("div", "kpis");
+  const m = focus.metrics;
+  const yl = focus.yearly || {};
+  const years = Object.keys(yl).length;
+  const loss = (focus.loss_years || []).length;
+
+  const items = [
+    [t("总收益","Total return"), pct(m.total), sgn(m.total),
+     t(`${focus.final_eq ? money(focus.final_eq) : ""} 元`, `¥${money(focus.final_eq)}`)],
+    [t("年化收益","CAGR"), pct(m.cagr), sgn(m.cagr),
+     `${m.start} → ${m.end}`],
+    [t("最大回撤","Max drawdown"), pct(m.maxdd), "neg",
+     m.maxdd_date ? t("谷底 "+m.maxdd_date, "trough "+m.maxdd_date) : "—"],
+    ["Sharpe", m.sharpe.toFixed(2), sgn(m.sharpe), "rf = 1.8%"],
+    [t("年胜率","Daily win rate"), pct(m.win_rate), "flat",
+     t(`${years} 个年度`, `${years} years`)],
+    [t("亏损年份","Loss years"), String(loss), loss ? "neg" : "flat",
+     loss ? (focus.loss_years||[]).join(", ") : t("无","none")],
+    [t("组合波动","Volatility"), pct(m.vol), "flat", t("年化","annualised")],
+    ["Sortino", m.sortino.toFixed(2), sgn(m.sortino), t("下行波动调整","downside-adjusted")],
+  ];
+  items.forEach(([k, v, c, x]) => {
+    const kd = el("div", "kpi");
+    kd.appendChild(el("div", "k", k));
+    const vd = el("div", "v " + c, v); kd.appendChild(vd);
+    kd.appendChild(el("div", "x", x || ""));
+    box.appendChild(kd);
+  });
+  return box;
+}
+
+/* ---------------- chart helpers ---------------- */
+function makeChart(host, height) {
+  const W = 1200, H = height, PL = 62, PR = 16, PT = 14, PB = 30;
+  const s = svg("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none",
+                          role: "img" });
+  host.appendChild(s);
+  return { s, W, H, PL, PR, PT, PB,
+           iw: W - PL - PR, ih: H - PT - PB };
+}
+
+function axes(ch, xs, ys, yFmt, xLabels) {
+  const { s, PL, PR, PT, PB, iw, ih, W, H } = ch;
+  let ymin = Math.min.apply(null, ys), ymax = Math.max.apply(null, ys);
+  if (ymin === ymax) { ymin -= 1; ymax += 1; }
+  const pad = (ymax - ymin) * 0.06;
+  ymin -= pad; ymax += pad;
+  ch.ymin = ymin; ch.ymax = ymax;
+  ch.X = i => PL + (xs.length < 2 ? iw/2 : (i / (xs.length - 1)) * iw);
+  ch.Y = v => PT + ih - ((v - ymin) / (ymax - ymin)) * ih;
+
+  /* gridlines */
+  const N = 5;
+  for (let i = 0; i <= N; i++) {
+    const v = ymin + (ymax - ymin) * i / N;
+    const y = ch.Y(v);
+    s.appendChild(svg("line", { x1: PL, x2: PL + iw, y1: y, y2: y,
+      stroke: "#1e2534", "stroke-width": 1 }));
+    const tx = svg("text", { x: PL - 8, y: y + 4, fill: "#5d6880",
+      "font-size": 11, "text-anchor": "end" });
+    tx.textContent = yFmt(v);
+    s.appendChild(tx);
+  }
+  /* x labels */
+  if (xLabels) {
+    const step = Math.max(1, Math.floor(xs.length / 7));
+    for (let i = 0; i < xs.length; i += step) {
+      const tx = svg("text", { x: ch.X(i), y: H - 10, fill: "#5d6880",
+        "font-size": 11, "text-anchor": "middle" });
+      tx.textContent = xLabels[i].slice(0, 7);
+      s.appendChild(tx);
+    }
+  }
+}
+
+/* ---------------- equity curve ---------------- */
+function buildCurvePanel(W) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("净值曲线","Equity curves") +
+    ' <span class="en">log scale · click legend to toggle</span>';
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "所有策略同屏对比，纵轴为对数刻度。点击图例可隐藏/显示。",
+    "All strategies on one log-scale chart. Click a legend entry to toggle.")));
+
+  const entries = Object.entries(W.strategies);
+  const lg = el("div", "legend");
+  entries.forEach(([k, s]) => {
+    const isCore = CORE.has(k);
+    const c = colorOf(k, entries);
+    const item = el("div", "lg" + (isCore ? " core" : "") + (S.hidden.has(k) ? " off" : ""));
+    const sw = el("span", "sw");
+    sw.style.background = c; sw.style.color = c;
+    item.appendChild(sw);
+    item.appendChild(el("span", null, s.label));
+    item.onclick = () => { S.hidden.has(k) ? S.hidden.delete(k) : S.hidden.add(k); render(); };
+    lg.appendChild(item);
+  });
+  p.appendChild(lg);
+
+  const host = el("div");
+  p.appendChild(host);
+  drawCurves(host, entries, W);
+  return p;
+}
+
+function colorOf(key, entries) {
+  if (key === "steve") return "#4c9aff";
+  if (key === "steve_gold") return "#3ddc97";
+  const i = entries.findIndex(([k]) => k === key);
+  return PAL[(i + 3) % PAL.length];
+}
+
+function drawCurves(host, entries, W) {
+  const active = entries.filter(([k]) => !S.hidden.has(k));
+  if (!active.length) { host.appendChild(el("div", "empty", "all strategies hidden")); return; }
+  const dates = active[0][1].curve.dates;
+  const xs = dates.map((_, i) => i);
+  const ch = makeChart(host, 360);
+  const logs = [];
+  active.forEach(([, s]) => s.curve.eq.forEach(v => logs.push(Math.log(Math.max(v, 1)))));
+  axes(ch, xs, logs, v => (Math.exp(v) / 1e6).toFixed(2) + "M", dates);
+
+  /* 本金基准线 */
+  const base = active[0][1].curve.eq[0];
+  const yb = ch.Y(Math.log(base));
+  ch.s.appendChild(svg("line", { x1: ch.PL, x2: ch.PL + ch.iw, y1: yb, y2: yb,
+    stroke: "#39425a", "stroke-width": 1, "stroke-dasharray": "4 4" }));
+
+  active.forEach(([k, s]) => {
+    const c = colorOf(k, entries);
+    const pts = s.curve.eq.map((v, i) => ch.X(i) + "," + ch.Y(Math.log(Math.max(v, 1))));
+    const isCore = CORE.has(k);
+    ch.s.appendChild(svg("polyline", {
+      points: pts.join(" "), fill: "none", stroke: c,
+      "stroke-width": isCore ? 2.6 : 1.3,
+      "stroke-opacity": isCore ? 1 : 0.62,
+      "stroke-linejoin": "round", "stroke-linecap": "round",
+    }));
+    /* 末端标注 */
+    const lastI = s.curve.eq.length - 1;
+    const tx = svg("text", { x: ch.X(lastI) - 4, y: ch.Y(Math.log(Math.max(s.curve.eq[lastI],1))) - 5,
+      fill: c, "font-size": 11, "text-anchor": "end", "font-weight": isCore ? 700 : 400 });
+    tx.textContent = (s.curve.eq[lastI] / 1e6).toFixed(2) + "M";
+    ch.s.appendChild(tx);
+  });
+}
+
+/* ---------------- drawdown ---------------- */
+function buildDDPanel(W) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("回撤曲线","Drawdown") +
+    ' <span class="en">peak-to-trough, relative to running high</span>';
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "纵轴为相对历史最高净值的回撤百分比。越平越好。",
+    "Drawdown from running peak. Flatter is better.")));
+
+  const entries = Object.entries(W.strategies);
+  const lg = el("div", "legend");
+  entries.forEach(([k, s]) => {
+    const isCore = CORE.has(k);
+    const c = colorOf(k, entries);
+    const item = el("div", "lg" + (isCore ? " core" : "") + (S.hidden.has(k) ? " off" : ""));
+    const sw = el("span", "sw"); sw.style.background = c; sw.style.color = c;
+    item.appendChild(sw);
+    item.appendChild(el("span", null, s.label));
+    item.onclick = () => { S.hidden.has(k) ? S.hidden.delete(k) : S.hidden.add(k); render(); };
+    lg.appendChild(item);
+  });
+  p.appendChild(lg);
+
+  const host = el("div"); p.appendChild(host);
+  const active = entries.filter(([k]) => !S.hidden.has(k));
+  if (!active.length) { host.appendChild(el("div","empty","—")); return p; }
+  const dates = active[0][1].dd.dates;
+  const xs = dates.map((_, i) => i);
+  const ch = makeChart(host, 260);
+  const all = [];
+  active.forEach(([, s]) => s.dd.v.forEach(v => all.push(v)));
+  axes(ch, xs, all, v => (v * 100).toFixed(0) + "%", dates);
+  active.forEach(([k, s]) => {
+    const c = colorOf(k, entries);
+    const pts = s.dd.v.map((v, i) => ch.X(i) + "," + ch.Y(v));
+    ch.s.appendChild(svg("polyline", { points: pts.join(" "), fill: "none", stroke: c,
+      "stroke-width": CORE.has(k) ? 2.2 : 1.1, "stroke-opacity": CORE.has(k) ? 1 : 0.55 }));
+  });
+
+  /* 最大回撤区间表 */
+  const focus = W.strategies[S.focus];
+  if (focus && focus.dd_periods && focus.dd_periods.length) {
+    p.appendChild(el("div", "cap",
+      t("最大回撤区间 Top5 · ", "Top 5 drawdown episodes · ") + focus.label));
+    const tbl = el("table");
+    tbl.innerHTML = "<thead><tr><th>" + t("峰值日","Peak") + "</th><th>" +
+      t("谷底日","Trough") + "</th><th>" + t("收复日","Recovery") + "</th><th>" +
+      t("深度","Depth") + "</th><th>" + t("持续(交易日)","Length (days)") +
+      "</th></tr></thead>";
+    const tb = el("tbody");
+    focus.dd_periods.forEach(pd => {
+      const tr = el("tr");
+      const cells = [
+        pd.peak_date || "—", pd.trough_date || "—",
+        pd.recovery_date || t("未收复","not recovered"),
+        pct(pd.depth), pd.length_days,
+      ];
+      cells.forEach((v, i) => {
+        const td = el("td", i === 3 ? "num " + sgn(pd.depth) : "num", String(v));
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb);
+    const wrap = el("div", "tbl-wrap"); wrap.appendChild(tbl);
+    p.appendChild(wrap);
+  }
+  return p;
+}
+
+/* ---------------- yearly returns ---------------- */
+function buildYearlyPanel(focus) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("年度收益","Yearly returns") +
+    ' <span class="en">' + escapeHtml(focus.label) + "</span>";
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t("柱状图，悬停查看具体数值。", "Bars — hover for exact values.")));
+  const host = el("div"); p.appendChild(host);
+
+  const yl = focus.yearly || {};
+  const years = Object.keys(yl).sort();
+  if (!years.length) { host.appendChild(el("div","empty","—")); return p; }
+  const vals = years.map(y => yl[y]);
+  const ch = makeChart(host, 250);
+  const all = vals.concat([0]);
+  axes(ch, years.map((_, i) => i), all, v => (v * 100).toFixed(0) + "%", null);
+  const bw = ch.iw / years.length;
+  years.forEach((y, i) => {
+    const v = yl[y];
+    const y0 = ch.Y(0), y1 = ch.Y(v);
+    const rect = svg("rect", {
+      x: ch.X(i) - bw * 0.32, y: Math.min(y0, y1),
+      width: bw * 0.64, height: Math.abs(y1 - y0), rx: 2,
+      fill: v >= 0 ? "#3ddc97" : "#ff6b6b", "fill-opacity": 0.82,
+    });
+    const tip = svg("title");
+    tip.textContent = y + ": " + pct(v);
+    rect.appendChild(tip);
+    ch.s.appendChild(rect);
+    const tx = svg("text", { x: ch.X(i), y: ch.H - 10, fill: "#5d6880",
+      "font-size": 11, "text-anchor": "middle" });
+    tx.textContent = y;
+    ch.s.appendChild(tx);
+  });
+  return p;
+}
+
+/* ---------------- performance table ---------------- */
+const COLS = [
+  { k: "label",    zh: "策略",       en: "Strategy",   f: s => s.label, num: false },
+  { k: "total",    zh: "总收益",     en: "Total",      f: s => pct(s.metrics.total),  num: true },
+  { k: "cagr",     zh: "年化",       en: "CAGR",       f: s => pct(s.metrics.cagr),   num: true },
+  { k: "vol",      zh: "波动",       en: "Vol",        f: s => pct(s.metrics.vol),    num: true },
+  { k: "sharpe",   zh: "夏普",       en: "Sharpe",     f: s => s.metrics.sharpe.toFixed(2),  num: true },
+  { k: "sortino",  zh: "索提诺",     en: "Sortino",    f: s => s.metrics.sortino.toFixed(2), num: true },
+  { k: "maxdd",    zh: "最大回撤",   en: "Max DD",     f: s => pct(s.metrics.maxdd),  num: true },
+  { k: "calmar",   zh: "卡玛",       en: "Calmar",     f: s => s.metrics.calmar.toFixed(2),   num: true },
+  { k: "win_rate", zh: "日胜率",     en: "Win rate",   f: s => pct(s.metrics.win_rate), num: true },
+  { k: "final_eq", zh: "期末净值",   en: "Final",      f: s => money(s.final_eq),    num: true },
+];
+
+function buildTable(W) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("策略绩效对比","Strategy comparison") +
+    ' <span class="en">click a column header to sort</span>';
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "含 5bp 佣金 + 3bp 滑点。核心策略高亮显示。",
+    "Includes 5bp commission + 3bp slippage. Core strategies highlighted.")));
+
+  const rows = Object.values(W.strategies);
+  const col = COLS.find(c => c.k === S.sortKey) || COLS[2];
+  rows.sort((a, b) => {
+    const va = col.k === "label" ? a.label : (col.k === "final_eq" ? a.final_eq : a.metrics[col.k]);
+    const vb = col.k === "label" ? b.label : (col.k === "final_eq" ? b.final_eq : b.metrics[col.k]);
+    if (typeof va === "string") return S.sortDir * va.localeCompare(vb);
+    return S.sortDir * (va - vb);
+  });
+
+  const tbl = el("table");
+  const thead = el("thead"); const htr = el("tr");
+  COLS.forEach(c => {
+    const th = el("th", c.k === S.sortKey ? "sorted" : "");
+    th.textContent = t(c.zh, c.en);
+    th.onclick = () => {
+      if (S.sortKey === c.k) S.sortDir = -S.sortDir;
+      else { S.sortKey = c.k; S.sortDir = c.k === "label" ? 1 : -1; }
+      render();
+    };
+    htr.appendChild(th);
+  });
+  thead.appendChild(htr); tbl.appendChild(thead);
+
+  const tb = el("tbody");
+  rows.forEach(s => {
+    const tr = el("tr", CORE.has(s.key) ? "core" : "");
+    COLS.forEach(c => {
+      const td = el("td", c.num ? "num" : "");
+      td.textContent = c.f(s);
+      if (c.k === "cagr" || c.k === "total") td.className += " " + sgn(s.metrics[c.k]);
+      if (c.k === "maxdd") td.className += " neg";
+      if (c.k === "label" && CORE.has(s.key)) {
+        const chip = el("span", "chip", t("核心","core"));
+        td.appendChild(chip);
+      }
+      tr.appendChild(td);
+    });
+    tr.onclick = () => { S.focus = s.key; render(); };
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  const wrap = el("div", "tbl-wrap"); wrap.appendChild(tbl);
+  p.appendChild(wrap);
+  return p;
+}
+
+/* ---------------- allocation ---------------- */
+function buildAllocationPanel(D) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("当前建议配置","Current allocation") +
+    ' <span class="en">the allocation being evaluated</span>';
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "这是被回测的那一组权重（Steve 配置，静态）。",
+    "This is the allocation under test.")));
+
+  const grid = el("div", "grid2");
+  const left = el("div");
+  left.appendChild(el("h2", null, t("权重明细","Weights")));
+  (D.allocation || []).forEach(a => {
+    const item = el("div", "item");
+    const l = el("div", "l");
+    l.innerHTML = escapeHtml(a.name) + " <small>" + escapeHtml(a.layer) + " · " +
+      escapeHtml(a.code) + "</small>";
+    item.appendChild(l);
+    const r = el("div", "r");
+    r.innerHTML = "<b>" + pctR(a.weight * 100) + "</b>";
+    item.appendChild(r);
+    const bar = el("div", "bar");
+    const i = el("i");
+    i.style.width = (a.weight * 100 * 4) + "%";
+    i.style.background = a.weight >= 0.2 ? "#4c9aff" : (a.weight >= 0.1 ? "#3ddc97" : "#5d6880");
+    bar.appendChild(i);
+    l.appendChild(bar);
+    grid.appendChild(left);
+    left.appendChild(item);
+  });
+
+  const right = el("div");
+  right.appendChild(el("h2", null, t("黄金分档择时规则","Gold banding rule")));
+  (D.gold_bands || []).forEach(b => {
+    const item = el("div", "item");
+    const l = el("div", "l");
+    l.innerHTML = (S.lang === "zh" ? "金价 ≤ " : "Gold ≤ ") + "$" + b.max_price.toLocaleString();
+    item.appendChild(l);
+    const r = el("div", "r");
+    r.innerHTML = "<b>" + pctR(b.weight * 100) + "</b> " + t("黄金","gold");
+    item.appendChild(r);
+    right.appendChild(item);
+  });
+  const note = el("div", "note");
+  note.innerHTML = "<b>" + t("说明","Note") + "：</b>" + t(
+    "金价越低黄金仓位越高，超过 $4,000 清零。回测显示该层仅小幅提升年化（约 +0.3pp），回撤改善有限。",
+    "Lower gold price → higher weight; above $4,000 the sleeve is zeroed. Backtests show only ~+0.3pp CAGR with limited drawdown benefit.");
+  right.appendChild(note);
+  grid.appendChild(right);
+  p.appendChild(grid);
+  return p;
+}
+
+/* ---------------- bugs fixed ---------------- */
+function buildBugsPanel(D) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("已修复的引擎缺陷","Engine bugs fixed") +
+    ' <span class="en">each one is pinned by a regression test</span>';
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "开发过程中出现过三个足以让结论完全反转的缺陷。每一个现在都有专门的回归测试。",
+    "Three bugs that each inverted the conclusions. Each now has a dedicated regression test.")));
+  const grid = el("div", "grid3");
+  (D.bugs_fixed || []).forEach(b => {
+    const c = el("div", "bug");
+    c.innerHTML = "<div class='t'><span class='ok'>✓</span>" +
+      escapeHtml(t(b.title_zh, b.title_en)) + "</div>" +
+      "<div class='d'>" + escapeHtml(t(b.impact_zh, b.impact_en)) +
+      "<span class='en'>" + escapeHtml(b.impact_en || "") + "</span></div>";
+    grid.appendChild(c);
+  });
+  p.appendChild(grid);
+  return p;
+}
+
+/* ---------------- methodology ---------------- */
+function buildMethodPanel(D) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("方法论与已知局限","Methodology & known limitations") +
+    ' <span class="en">what this backtest does and does not prove</span>';
+  p.appendChild(h);
+  (D.methodology || []).forEach(m => {
+    const row = el("div", "meth");
+    row.appendChild(el("span", "st " + (m.status || "warn")));
+    const box = el("div", "m");
+    box.innerHTML = "<div class='t'>" + escapeHtml(t(m.title_zh, m.title_en)) + "</div>" +
+      "<div class='d'>" + escapeHtml(t(m.detail_zh, m.detail_en)) +
+      "<span class='en'>" + escapeHtml(m.detail_en || "") + "</span></div>";
+    row.appendChild(box);
+    p.appendChild(row);
+  });
+  return p;
+}
+
+/* ---------------- controls ---------------- */
+$("#btn-lang").onclick = () => {
+  S.lang = S.lang === "zh" ? "en" : "zh";
+  $("#btn-lang").textContent = S.lang === "zh" ? "EN" : "中";
+  document.documentElement.lang = S.lang === "zh" ? "zh-CN" : "en";
+  render();
+};
+$("#btn-rebuild").onclick = async () => {
+  const b = $("#btn-rebuild"); b.disabled = true; b.textContent = "重建中…";
+  try { await fetch("api/rebuild", { method: "POST" }); }
+  catch (e) {}
+  setTimeout(() => { b.disabled = false; b.textContent = "重建数据 Rebuild"; load(); }, 3000);
+};
+
+load();
+</script>
+</body>
+</html>
