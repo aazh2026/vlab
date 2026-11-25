@@ -10,7 +10,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
-[![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://aazh2026.github.io/vlab/)
+[![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://postcodeengineering.com/vlab/)
 
 <p align="center">
   <img src=".github/assets/demo.webp" width="820" alt="vlab dashboard demo: dual windows, KPIs, equity curve, drawdown curve, yearly returns and sortable performance table" />
@@ -40,7 +40,7 @@
 
 | 我最初报的数字 | 修复后的真实数字 | 差异 |
 |---|---|---|
-| 年化 6.78%，最大回撤 -13% | 见下方真实口径 | **回撤被低估了 4 倍** |
+| 年化 6.78%，最大回撤 -13% | 年化 7.85%，最大回撤 **-8.97%** | **回撤差了 4.03 个百分点** |
 | "回测覆盖 2015–2026" | 实际用了 2001–2026 数据 | **穿越了时空** |
 
 三个缺陷，每一个都足以让结论**完全反转**：
@@ -87,13 +87,14 @@
 
 修复之后，同一套配置、同一个 2019–2026 窗口：
 
-| | 我最初报的 | 修复后 |
-|---|---|---|
-| 最大回撤 | **-13%** | **-8.97%** |
-| 年化 | 6.78% | **7.85%** |
-| 2008 年单年 | （未测）| **-6.4%** |
+| | 我最初报的 | 修复后 | 差异 |
+|---|---|---|---|
+| 最大回撤 | **-13%** | **-8.97%** | **差 4.03 个百分点**（比例 1.45 倍） |
+| 年化 | 6.78% | **7.85%** | 差 1.07 个百分点 |
 
-**回撤差了 4 倍。** 而如果我从来没建这个系统、从来没写那条测试，我会拿着 -13% 这个数字去做真实的投资决策，并且永远不会知道自己错了。
+> 注：`-13%` 与 `-8.97%` 的差是**百分点**不是"倍"。早期版本这里写成"回撤被低估了 4 倍"——**这正是本项目要消灭的那类单位混用错误**（把 4.03 个百分点说成了 4 倍），修正于此。
+
+而如果我从来没建这个系统、从来没写那条测试，我会拿着 -13% 这个数字去做真实的投资决策，并且永远不会知道自己错了。
 
 ### 然后我又亲手制造了第 5 个 bug
 
@@ -253,7 +254,7 @@ PYTHONPATH=src python3 -m vlab serve
 > 两种方式产出的结果完全一致——引擎、指标、面板是同一份代码，
 > 差别只在于是从 wheel 安装还是从工作区运行。
 
-**在线体验**：<https://aazh2026.github.io/vlab/>
+**在线体验**：<https://postcodeengineering.com/vlab/>
 
 ---
 
@@ -377,7 +378,7 @@ PYTHONPATH=src python3 -m vlab report         # build the report
 PYTHONPATH=src python3 -m vlab serve          # dashboard on :8765
 ```
 
-Live demo: <https://aazh2026.github.io/vlab/>
+Live demo: <https://postcodeengineering.com/vlab/>
 
 ## License
 
