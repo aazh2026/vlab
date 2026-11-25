@@ -1,0 +1,39 @@
+name: 策略请求 / Strategy request
+description: 提交一个你想回测的配置
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        想看某个配置在历史上的表现？把权重写出来就行。
+
+        **注意**：如果某个标的在该回测窗口起点还没上市，引擎会**跳过**这个策略
+        而不是偷偷让未来的资产提前入场。这是刻意的设计。
+
+  - type: input
+    id: name
+    attributes:
+      label: 策略名称 / Strategy name
+      placeholder: "例如：我的养老账户配置"
+    validations:
+      required: true
+
+  - type: textarea
+    id: weights
+    attributes:
+      label: 权重 / Weights
+      description: |
+        格式：`代码 权重`，每行一个，例如：
+        ```
+        sh512890 0.30
+        sh518880 0.20
+        sh511010 0.50
+        ```
+        标的代码见 README 的资产池表格。
+    validations:
+      required: true
+
+  - type: textarea
+    id: rationale
+    attributes:
+      label: 为什么想看这个配置 / Why this allocation
