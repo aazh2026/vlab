@@ -195,6 +195,7 @@ const S = {
   sortKey: "cagr",
   sortDir: -1,
   focus: "steve_gold",
+  propScn: "base",   // 房产模块情景：base | steve
 };
 
 const PAL = ["#4c9aff","#3ddc97","#ffb84d","#ff6b6b","#a78bfa","#4dd0e1",
@@ -291,6 +292,9 @@ function render() {
   /* bugs + methodology */
   app.appendChild(buildBugsPanel(D));
   app.appendChild(buildMethodPanel(D));
+
+  /* property: cash vs house */
+  if (D.property) app.appendChild(buildPropertyPanel(D.property));
 }
 
 function escapeHtml(s) {
@@ -735,6 +739,189 @@ $("#btn-rebuild").onclick = async () => {
 };
 
 load();
+
+/* ================================================================
+   Property module — "持币 vs 持房" / cash vs house
+   ================================================================ */
+function buildPropertyPanel(P) {
+  const p = el("div", "panel");
+  const h = el("h2"); h.innerHTML = t("持币 vs 持房","Cash vs House") +
+    ' <span class="en">Shanghai Tianlin Shiyi Village · framework, not a prediction</span>';
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "同一笔钱：持有资产配置/货币基金 vs 买一套房。含月供摊还、租金税费、空置损耗、物业费、买卖税费。",
+    "Same money: hold assets vs buy a flat — with amortisation, rent tax, vacancy, management fees and transaction costs.")));
+
+  /* 场景切换（状态存在全局 S 里，切换后重渲染不会丢失） */
+  const bar = el("div", "legend");
+  [["base", P.base], ["steve", P.steve]].forEach(([k, v]) => {
+    if (!v) return;
+    const item = el("div", "lg" + (k === S.propScn ? " core" : ""));
+    item.appendChild(el("span", null, v.scenario_label));
+    item.onclick = () => { S.propScn = k; render(); };
+    bar.appendChild(item);
+  });
+  p.appendChild(bar);
+
+  const S0 = P[S.propScn] || P.base;
+  if (!S0) { p.appendChild(el("div", "empty", "—")); return p; }
+
+  /* 免责声明 */
+  const d = el("div", "note");
+  d.innerHTML = "<b>⚠️</b> " + escapeHtml(
+    S.lang === "zh" ? P.disclaimer_zh : P.disclaimer_en);
+  p.appendChild(d);
+
+  /* KPI */
+  const kp = el("div", "kpis");
+  const diff = S0.final_diff;
+  const items = [
+    [t("总房价","Total price"), money(S0.price0), "flat",
+     S0.assumptions.area_sqm + " m² × " + money(S0.assumptions.price_per_sqm) + "/m²"],
+    [t("首付 + 税费","Down + costs"), money(S0.down_payment + S0.buy_cost), "flat",
+     t("首付 ", "down ") + Math.round(S0.assumptions.down_ratio * 100) + "% + " +
+     t("税费 ", "costs ") + money(S0.buy_cost)],
+    [t("月供","Monthly payment"), money(S0.monthly_payment), "flat",
+     Math.round(S0.assumptions.mortgage_years) + "y @ " +
+     (S0.assumptions.mortgage_rate * 100).toFixed(2) + "%"],
+    [t("净租金回报","Net rent yield"), pct(S0.net_rent_yield), "flat",
+     t("毛 ", "gross ") + pct(S0.gross_rent_yield)],
+    [t("Carry（净租金-房贷利率）","Carry"), pct(S0.carry), S0.carry >= 0 ? "pos" : "neg",
+     S0.carry >= 0 ? t("正 carry","positive carry") : t("负 carry","negative carry")],
+    [t("持币终值","Cash final"), money(S0.final_cash), "flat", S0.scenario_label],
+    [t("持房终值","House final"), money(S0.final_house), "flat",
+     t("市值-贷款+净现金流","value-loan+cashflow")],
+    [t("差额（房-币）","Difference"), money(diff), diff >= 0 ? "pos" : "neg",
+     diff >= 0 ? t("持房占优","house ahead") : t("持币占优","cash ahead")],
+  ];
+  items.forEach(([k, v, c, x]) => {
+    const kd = el("div", "kpi");
+    kd.appendChild(el("div", "k", k));
+    kd.appendChild(el("div", "v " + c, v));
+    kd.appendChild(el("div", "x", x || ""));
+    kp.appendChild(kd);
+  });
+  p.appendChild(kp);
+
+  /* 两条净值曲线：持币 / 持房 */
+  const months = S0.months_downsampled;
+  const xs = months.map((_, i) => i);
+  const host = el("div"); p.appendChild(host);
+  const ch = makeChart(host, 300);
+  const cash = S0.cash_downsampled, house = S0.house_downsampled, df = S0.diff_downsampled;
+  const all = cash.concat(house);
+  axes(ch, xs, all, v => (v / 1e6).toFixed(2) + "M", months);
+
+  const line = (vals, color, w) => {
+    const pts = vals.map((v, i) => ch.X(i) + "," + ch.Y(v));
+    ch.s.appendChild(svg("polyline", { points: pts.join(" "), fill: "none",
+      stroke: color, "stroke-width": w,
+      "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  };
+  line(cash, "#3ddc97", 2.4);
+  line(house, "#4c9aff", 2.4);
+
+  /* 差额带 */
+  p.appendChild(el("div", "cap", t(
+    "下图：差额 = 持房终值 − 持币终值。>0 表示持房占优。",
+    "Below: difference = house − cash. Above zero means the house wins.")));
+
+  const host2 = el("div"); p.appendChild(host2);
+  const ch2 = makeChart(host2, 170);
+  let dmin = Math.min.apply(null, df), dmax = Math.max.apply(null, df);
+  if (dmin === dmax) { dmin -= 1; dmax += 1; }
+  const dpad = (dmax - dmin) * 0.15; dmin -= dpad; dmax += dpad;
+  ch2.X = i => ch2.PL + (xs.length < 2 ? ch2.iw/2 : (i/(xs.length-1))*ch2.iw);
+  ch2.Y = v => ch2.PT + ch2.ih - ((v - dmin)/(dmax - dmin))*ch2.ih;
+  for (let i = 0; i <= 4; i++) {
+    const v = dmin + (dmax - dmin)*i/4;
+    const y = ch2.Y(v);
+    ch2.s.appendChild(svg("line", { x1: ch2.PL, x2: ch2.PL+ch2.iw, y1: y, y2: y,
+      stroke: "#1e2534", "stroke-width": 1 }));
+    const tx = svg("text", { x: ch2.PL-8, y: y+4, fill: "#5d6880", "font-size": 11,
+      "text-anchor": "end" });
+    tx.textContent = (v/1e4).toFixed(0) + "万";
+    ch2.s.appendChild(tx);
+  }
+  const y0 = ch2.Y(0);
+  ch2.s.appendChild(svg("line", { x1: ch2.PL, x2: ch2.PL+ch2.iw, y1: y0, y2: y0,
+    stroke: "#39425a", "stroke-width": 1, "stroke-dasharray": "4 4" }));
+  const dpts = df.map((v, i) => ch2.X(i) + "," + ch2.Y(v));
+  ch2.s.appendChild(svg("polygon", {
+    points: [ch2.X(0)+","+y0].concat(dpts).concat([ch2.X(df.length-1)+","+y0]).join(" "),
+    fill: df[df.length-1] >= 0 ? "#3ddc97" : "#ff6b6b", "fill-opacity": 0.14 }));
+  ch2.s.appendChild(svg("polyline", { points: dpts.join(" "), fill: "none",
+    stroke: "#ffb84d", "stroke-width": 2.2,
+    "stroke-linejoin": "round", "stroke-linecap": "round" }));
+
+  /* 盈亏平衡 */
+  const be = el("div", "grid3");
+  const beItems = [
+    [t("保本月租金","Break-even rent"),
+     S0.breakeven_rent ? money(S0.breakeven_rent) : "—",
+     t("持房要持平所需租金（当前 " + money(S0.monthly_rent) + "）",
+       "rent needed to break even (now " + money(S0.monthly_rent) + ")")],
+    [t("保本房价年化涨幅","Break-even price growth"),
+     S0.breakeven_price_growth != null ? pct(S0.breakeven_price_growth) : "—",
+     t("假设 " + pct(S0.price_growth) + " 时", "vs assumed " + pct(S0.price_growth))],
+    [t("房价需下跌","Price drop to break even"),
+     S0.price_drop_to_breakeven != null ? pct(S0.price_drop_to_breakeven) : "—",
+     t("一次性下跌多少才持平", "one-off drop to break even")],
+  ];
+  beItems.forEach(([k, v, x]) => {
+    const c = el("div", "bug");
+    c.innerHTML = "<div class='t'>" + escapeHtml(k) + "</div>" +
+      "<div class='d' style='font-size:17px;color:var(--tx);font-weight:600'>" +
+      escapeHtml(v) + "</div><div class='d'>" + escapeHtml(x) + "</div>";
+    be.appendChild(c);
+  });
+  p.appendChild(be);
+
+  /* 敏感性网格 */
+  const sens = S0.sensitivity;
+  p.appendChild(el("div", "cap",
+    t("敏感性网格：房价 × 租金。差额 > 0 表示持房占优（利率见报告 JSON）。",
+      "Sensitivity grid: price × rent. Difference > 0 means the house wins (rates in the report JSON).")));
+  const tbl = el("table");
+  tbl.innerHTML = "<thead><tr><th>" + t("房价\\租金","Price\\Rent") + "</th>" +
+    sens.rents.map(r => "<th>" + Math.round(r*100) + "%</th>").join("") +
+    "</tr></thead>";
+  const tb = el("tbody");
+  sens.grid.forEach(row => {
+    const tr = el("tr");
+    const th = el("td", null, Math.round(row.price_mult*100) + "%");
+    th.style.fontWeight = "600";
+    tr.appendChild(th);
+    row.cells.forEach(c => {
+      const td = el("td", "num " + (c.final_diff >= 0 ? "pos" : "neg"),
+        money(c.final_diff));
+      tr.appendChild(td);
+    });
+    tb.appendChild(tr);
+  });
+  tbl.appendChild(tb);
+  const wrap = el("div", "tbl-wrap"); wrap.appendChild(tbl);
+  p.appendChild(wrap);
+  p.appendChild(el("div", "cap",
+    (sens.all_same_sign
+      ? t("结论稳健：整个网格符号一致。", "Robust: the whole grid has one sign.")
+      : t("⚠️ 结论不稳健：" + sens.sign_positive_count + "/" + sens.total +
+           " 个组合持房占优，结论会随假设翻转。",
+           "⚠️ Not robust: " + sens.sign_positive_count + "/" + sens.total +
+           " combinations favour the house; the conclusion flips with assumptions.")) +
+    t(" 差额区间 " + money(sens.min_diff) + " ~ " + money(sens.max_diff) + "。",
+      " Range " + money(sens.min_diff) + " ~ " + money(sens.max_diff) + ".")));
+
+  /* 假设清单 */
+  p.appendChild(el("div", "cap",
+    t("注意：以上全部基于未核验的占位假设。挂牌价 ≠ 成交价；"
+      + "贷款额度、利率、税费须以银行预审与网签成交为准。",
+      "Note: everything above uses unverified placeholder assumptions. "
+      + "Asking prices are not transaction prices; loan terms and taxes must come "
+      + "from bank pre-approval and registered contracts.")));
+  return p;
+}
+
 </script>
 </body>
 </html>

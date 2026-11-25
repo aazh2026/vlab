@@ -27,6 +27,8 @@ SRC = os.path.join(ROOT, "src")
 DATA_DIR = os.path.join(ROOT, "data")
 RESULTS_DIR = os.path.join(ROOT, "results")
 SITE_DIR = os.path.join(ROOT, "site")
+#: GitHub Pages 实际发布的目录（仓库 Settings → Pages → Source: main /docs）
+DOCS_DIR = os.path.join(ROOT, "docs")
 WEB_DIR = os.path.join(SRC, "vlab", "web")
 
 sys.path.insert(0, SRC)
@@ -80,6 +82,19 @@ def build() -> int:
     # 4) 免责声明单独的纯文本文件，方便被引用
     with open(os.path.join(SITE_DIR, "DISCLAIMER.txt"), "w", encoding="utf-8") as f:
         f.write(rep["disclaimer_zh"] + "\n\n" + rep["disclaimer_en"] + "\n")
+
+    # 5) 同步到 docs/ —— GitHub Pages 配置的发布目录是 /docs
+    #    （见仓库 Settings → Pages → Source: main /docs）。
+    #    site/ 是构建中间产物，docs/ 才是真正上线的那一份。
+    #    注意：只覆盖同名文件，不删除 docs/ 里的额外文档
+    #    （GROWTH.md、POST_zh.md 等）。
+    if os.path.isdir(DOCS_DIR):
+        os.makedirs(DOCS_DIR, exist_ok=True)
+        for n in sorted(os.listdir(SITE_DIR)):
+            shutil.copy(os.path.join(SITE_DIR, n), os.path.join(DOCS_DIR, n))
+        print(f"✓ 已同步到 Pages 发布目录：{DOCS_DIR}")
+    else:
+        print(f"! 未找到 {DOCS_DIR}，跳过同步")
 
     size = sum(
         os.path.getsize(os.path.join(SITE_DIR, n)) for n in os.listdir(SITE_DIR)
