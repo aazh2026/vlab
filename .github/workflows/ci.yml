@@ -6,8 +6,12 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: test (python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -19,27 +23,24 @@ jobs:
         run: python3 -m unittest discover -s tests -v
 
   lint:
+    name: byte-compile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Byte-compile all modules
         run: python3 -m compileall -q src tests
 
-  pages:
-    needs: [test, lint]
+  build-site:
+    name: build static site
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build static site
-        run: python3 scripts/build_site.py
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-      - uses: actions/deploy-pages@v4
-        id: deployment
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      - name: Build site into docs/
+        run: |
+          python3 -m pip install --quiet nothing 2>/dev/null || true
+          python3 scripts/build_site.py
+      - name: Verify site output exists
+        run: |
+          test -f docs/index.html
+          test -f docs/report.json
+          echo "site OK"
