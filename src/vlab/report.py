@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
-from . import engine, metrics as M, strategies as S, windows as W
+from . import engine, metrics as M, property as PROP, strategies as S, windows as W
 
 DISCLAIMER_ZH = (
     "⚠️ 免责声明：��项目为量化研究与教学用途，所有结果基于历史数据回测，"
@@ -149,6 +149,16 @@ def build_report(
         "windows": {},
     }
 
+    # ---- 房产模块：持币 vs 持房 ----
+    # 用窗口 A 的 Steve 配置净值作为"持币"侧的另一条情景，
+    # 以及货币基金作为基准情景。两者都明确标注为外推，不是预测。
+    try:
+        prop = _property_section(series, out)
+        if prop:
+            out["property"] = prop
+    except Exception as exc:            # 房产模块失败不得影响主报告
+        out["property_error"] = str(exc)
+
     for wk in W.WINDOWS:
         D, M_ = W.slice_window(dates, mat, wk)
         if len(D) < 30:
@@ -228,6 +238,67 @@ def _allocation_table() -> List[Dict]:
         {"code": c, "layer": layer, "name": name, "weight": w}
         for c, layer, name, w in layers
     ]
+
+
+def _property_section(series: Dict, report: Dict) -> Optional[Dict]:
+    """构建"持币 vs 持房"区块。
+
+    两种持币情景：
+
+    * ``money_market`` — 货币基金 1.8% 年化（基准，容易核验）
+    * ``steve`` — 本项目 Steve 配置的历史月收益率外推（**外推，不是预测**）
+
+    房价路径由 ``price_growth`` 假设驱动，因为本项目**不接入任何房产挂牌
+    或成交数据**。结论因此必须看敏感性网格是否同号。
+    """
+    dates = engine.trading_dates(series)
+    mat = engine.align(series, dates)
+    D, M_ = W.slice_window(dates, mat, W.DEFAULT_WINDOW)
+    if len(D) < 200:
+        return None
+
+    start = D[0]
+    horizon = PROP.DEFAULT_HORIZON_YEARS
+
+    # 基准情景：货币基金
+    base = PROP.build_property_section(
+        start, horizon_years=horizon,
+        cash_scenario_label="货币基金 1.8% 年化",
+        cash_scenario_note="持币侧按货币基金固定年化计息。")
+
+    # 策略情景：Steve 配置的历史月收益率外推
+    steve_scn = None
+    strat = S.STRATEGIES.get("steve")
+    if strat is not None and all(c in M_ for c in strat.codes):
+        res = engine.backtest(strat.fn, M_, D, start_cash=1_000_000.0)
+        eq = [c["eq"] for c in res["curve"]]
+        mret = PROP.monthly_returns_from_equity(eq, D)
+        # 外推：把历史平均月收益率平铺到投影区间
+        avg = PROP.average_monthly_return(eq, D)
+        months = PROP.month_grid(start, f"{int(start[:4]) + horizon:04d}-"
+                                     f"{start[5:7]}-{start[8:10]}")
+        flat = [avg] * len(months)
+        steve_scn = PROP.build_property_section(
+            start, horizon_years=horizon,
+            cash_monthly_returns=flat,
+            cash_scenario_label="Steve 配置历史月收益率外推",
+            cash_scenario_note=(
+                "持币侧使用本项目 Steve 配置窗口 A 的历史月收益率均值外推。"
+                "**这是外推，不是预测**；历史表现不代表未来表现。"))
+
+    out = {
+        "base": base,
+        "steve": steve_scn,
+        "window": {"start": start, "end": base["end"],
+                   "label": W.window_label(W.DEFAULT_WINDOW)},
+        "disclaimer_zh": (
+            "⚠️ 房产对比基于未核验的占位假设（挂牌价不等于成交价，贷款与税费需银行预审）。"
+            "结果仅为框架演示，不构成投资建议，不预示未来收益。"),
+        "disclaimer_en": (
+            "⚠️ Property comparison uses unverified placeholder assumptions. "
+            "Not investment advice; past performance does not predict future returns."),
+    }
+    return out
 
 
 def _now() -> str:
