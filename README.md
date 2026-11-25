@@ -12,6 +12,9 @@
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
 [![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://postcodeengineering.com/vlab/)
 [![Release](https://img.shields.io/github/v/release/aazh2026/vlab.svg)](https://github.com/aazh2026/vlab/releases/latest)
+[![Tests](https://img.shields.io/badge/tests-52%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
+[![Last Commit](https://img.shields.io/github/last-commit/aazh2026/vlab)](https://github.com/aazh2026/vlab/commits/main)
+[![Discussions](https://img.shields.io/github/discussions/aazh2026/vlab?label=Discussion)](https://github.com/aazh2026/vlab/discussions)
 
 <p align="center">
   <img src=".github/assets/demo.webp" width="820" alt="vlab dashboard demo: dual windows, KPIs, equity curve, drawdown curve, yearly returns and sortable performance table" />
@@ -20,6 +23,17 @@
 <p align="center"><sub>18 秒看完整面板：双窗口切换 → 8 个 KPI → 净值/回撤/年度收益 → 可排序绩效表。<br/>18-second tour: dual windows, 8 KPIs, equity &amp; drawdown curves, yearly returns, sortable performance table.</sub></p>
 
 [English](#english) · [中文](#中文)
+
+<p align="center">
+  <a href="https://github.com/aazh2026/vlab/stargazers"><img alt="Star vlab on GitHub" src="https://img.shields.io/github/stars/aazh2026/vlab?style=social&label=%E2%9C%95%20Star"></a>
+  <a href="https://github.com/aazh2026/vlab/issues/new?template=bug_report.yml"><img alt="Report a bug" src="https://img.shields.io/badge/bugs-welcome-ff6b6b?style=social&label=%F0%9F%90%9B%20Report%20a%20bug"></a>
+  <a href="https://github.com/aazh2026/vlab/discussions"><img alt="Join the discussion" src="https://img.shields.io/badge/discussions-ask%20me-blueviolet?style=social&label=%F0%9F%A9%B8%20Discuss"></a>
+</p>
+
+<p align="center"><sub>
+如果这个仓库帮你避免了一次"被自己的回测 bug 骗了"，点个 ⭐ 是最直接的反馈 —— 它会决定我先修哪个 bug、先做哪个功能。<br/>
+If this repo saved you from a silently broken backtest, a ⭐ is the most direct signal I can get — it decides which bug I fix first.
+</sub></p>
 
 </div>
 
@@ -30,6 +44,20 @@
 > **本项目为量化研究与教学用途。所有结果均为基于历史数据的回测，不预示未来收益，不构成任何投资建议、要约或推荐。历史表现不代表未来表现。投资有风险，决策需自负。**
 >
 > *For research and education only. All results are backtests on historical data. Past performance does not predict future returns, and nothing here is investment advice, an offer, or a recommendation. Investing involves risk — you are solely responsible for your own decisions.*
+
+---
+
+## 👀 谁该收藏这个仓库 / Who should star this
+
+如果你符合下面**任意一条**，这个仓库对你有直接价值：
+
+- **你写过自己的回测脚本** —— 这里的 52 个回归测试就是一份「常见坑清单」，可以直接拿去对照你的代码
+- **你相信"回测数字"但不确定口径** —— 双窗口强制分离、不可投资部分留在现金、超额权重不归一化，这三条会改变你的结论
+- **你在做资产配置 / 组合管理** —— 面板里 26 条策略曲线 + 可排序绩效表 + 年度收益链式还原，复制粘贴就能当内部看板
+- **你在评估要不要自己写个回测引擎** —— 别写。这个仓库是纯标准库、零依赖、可以直接 `git clone` 跑起来的
+- **你关心"回测软件的 bug 率"** —— 这个项目的 bug 清单和修复过程本身就是一份公开的案例研究
+
+**如果你只想看一个数字**：这套配置的价值是**把回撤压到约 −10%**，代价是每年少约 5.7 个百分点收益。它不是"更好的赚钱方法"，是"活下来的方法"。
 
 ---
 
@@ -406,6 +434,20 @@ MIT © 2026 [aazh2026](https://github.com/aazh2026)
 ## ⚠️ Disclaimer
 
 > **For research and education only. All results are backtests on historical data. Past performance does not predict future returns, and nothing here constitutes investment advice, an offer, or a recommendation. Investing involves risk — you are solely responsible for your own decisions.**
+
+## 👀 Who should star this
+
+If **any** of these apply, this repo is directly useful to you:
+
+- **You have written your own backtest script** — the 52 regression tests are effectively a checklist of the traps, and you can diff your code against it
+- **You believe the numbers but not the methodology** — dual windows that must never be mixed, uninvestable weight left in cash, no silent renormalisation: each of those can change your conclusion
+- **You work on allocation or portfolio management** — 26 strategy curves, a sortable performance table, and chained yearly returns you can lift straight into an internal dashboard
+- **You were about to write your own backtest engine** — don't. Pure standard library, zero dependencies, `git clone` and run
+- **You care about how buggy backtest software tends to be** — the bug list and the fixes are a public case study
+
+**If you only read one number**: this allocation's job is to hold drawdown near **−10%**, and the price is about **5.7 percentage points of annual return**. It is not a better way to make money; it is a way to survive.
+
+---
 
 ## What this is
 
