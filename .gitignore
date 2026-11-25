@@ -13,3 +13,4 @@ htmlcov/
 data/
 results/
 *.log
+dist/

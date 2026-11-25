@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vlab"
+version = "1.0.0"
+description = "Zero-dependency portfolio backtesting lab with regression tests for its own historical bugs."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "aazh2026" }]
+keywords = ["backtesting", "portfolio", "asset-allocation", "quant", "finance", "regression-testing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+]
+
+# Zero runtime dependencies — by design.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/aazh2026/vlab"
+Repository = "https://github.com/aazh2026/vlab"
+Issues = "https://github.com/aazh2026/vlab/issues"
+Changelog = "https://github.com/aazh2026/vlab/commits/main"
+
+[project.scripts]
+vlab = "vlab.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+vlab = ["web/*.html"]
