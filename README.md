@@ -286,7 +286,19 @@ PYTHONPATH=src python3 -m vlab report
 PYTHONPATH=src python3 -m vlab serve
 ```
 
-**方式二：pip 安装（零依赖，Python 3.9+）**
+**方式二：Homebrew 安装（已上线可用，零依赖）**
+
+```bash
+brew tap aazh2026/vlab
+brew install vlab
+
+vlab test          # 跑 77 个回归测试
+vlab fetch && vlab report && vlab serve
+```
+
+Formula 位于 [`aazh2026/homebrew-tap`](https://github.com/aazh2026/homebrew-tap)，当前追踪 **v1.1.1**。
+
+**方式三：pip 安装（零依赖，Python 3.9+）**
 
 包已构建并由 CI 校验（wheel + sdist、`dependencies = []`），**PyPI 发布正在走流程中**，
 上架后即可：
@@ -296,8 +308,8 @@ pip install vlab
 vlab fetch && vlab report && vlab serve
 ```
 
-> 两种方式产出的结果完全一致——引擎、指标、面板是同一份代码，
-> 差别只在于是从 wheel 安装还是从工作区运行。
+> 三种方式产出的结果完全一致——引擎、指标、面板是同一份代码，
+> 差别只在于是从 wheel 安装、从 brew 安装，还是从工作区运行。
 
 **在线体验**：<https://postcodeengineering.com/vlab/>
 
