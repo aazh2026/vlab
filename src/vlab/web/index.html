@@ -277,6 +277,7 @@ const S = {
     win: "A",           // 窗口（与主面板独立）
     rebal: "monthly",
     cash0: 1000000,
+    cashApy: 0,        // 闲置现金年化利率（%）—— 默认 0，保守口径
     result: null,
     busy: false,
     universe: null,     // 可投资状态
@@ -880,6 +881,7 @@ async function sbRun() {
       body: JSON.stringify({
         weights: w, window: S.sb.win, rebal: S.sb.rebal,
         cash0: S.sb.cash0, split_ratio: 0.7,
+        cash_apy: (S.sb.cashApy || 0) / 100,
       }),
     });
     const j = await r.json();
@@ -968,6 +970,19 @@ function buildSandboxPanel(D) {
   f3.appendChild(inpC);
   left.appendChild(f3);
 
+  /* ---- cash rate: 闲置现金年化利率（此前引擎按 0 处理，界面却宣称计息） ---- */
+  const f4 = el("div", "sb-field");
+  f4.appendChild(el("label", null, t("闲置现金年化利率","Idle cash rate (annual)")));
+  const inpA = el("input"); inpA.type = "number"; inpA.step = "0.1";
+  inpA.min = "0"; inpA.max = "20";
+  inpA.value = S.sb.cashApy;
+  inpA.title = t("默认 0%（保守口径）。设为 1.5 相当于假设闲置资金能拿到 1.5% 年化。",
+                  "0% by default (conservative). 1.5 means idle cash earns 1.5%/yr.");
+  inpA.onchange = () => { S.sb.cashApy = parseFloat(inpA.value) || 0; };
+  f4.appendChild(inpA);
+  f4.appendChild(el("small", "cap", t("%","%")));
+  left.appendChild(f4);
+
   /* ---- asset list ---- */
   const assets = el("div", "sb-assets");
   const uni = S.sb.universe || (S.data && S.data.universe) || [];
@@ -1021,8 +1036,8 @@ function buildSandboxPanel(D) {
   left.appendChild(totBox);
   if (sum < 0.9999999) {
     left.appendChild(el("div", "sb-msg", t(
-      "剩余 " + ((1 - sum) * 100).toFixed(1) + "% 留在现金，按货币基金计息。",
-      (1 - sum) * 100 + "% stays in cash.")));
+      "剩余 " + ((1 - sum) * 100).toFixed(1) + "% 留在现金。现金利率见下方设置（默认 0%，保守口径）。",
+      (1 - sum) * 100 + "% stays in cash. Set the cash rate below (0% by default — conservative).")));
   }
 
   const run = el("button", "sb-run", S.sb.busy
@@ -1069,6 +1084,12 @@ function buildSandboxPanel(D) {
   card.appendChild(sbRow(t("期末净值","Final equity"),
                          "¥" + money(R.curve.final_eq)));
   card.appendChild(sbRow(t("交易笔数","Trades"), String(R.trade_count)));
+  card.appendChild(sbRow(t("现金利率","Cash rate"),
+    (R.cash_apy != null ? (R.cash_apy * 100).toFixed(2) + "%" : "—")));
+  if (R.interest_earned != null) {
+    card.appendChild(sbRow(t("现金利息","Interest earned"),
+      "¥" + money(R.interest_earned)));
+  }
   card.appendChild(sbRow(t("区间","Period"), m.start + " → " + m.end));
   right.appendChild(card);
 

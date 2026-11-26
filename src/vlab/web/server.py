@@ -127,6 +127,8 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 rebal=body.get("rebal") or "monthly",
                 cash0=float(body.get("cash0") or 1_000_000.0),
                 split_ratio=float(body.get("split_ratio") or 0.7),
+                # 闲置现金年化利率 —— 默认 0（保守），由用户显式选择
+                cash_apy=float(body.get("cash_apy") or 0.0),
             )
         except Exception as exc:
             self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)

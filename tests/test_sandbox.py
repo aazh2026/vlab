@@ -199,5 +199,66 @@ class TestUniverseAvailability(unittest.TestCase):
         self.assertGreaterEqual(nb, na)
 
 
+class TestCashInterest(unittest.TestCase):
+    """闲置现金计息（BUG-4：界面曾宣称计息，引擎实际按 0 处理）。
+
+    这是本项目最诚实性相关的一条：界面不能替用户假设一个利率。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        cls.data_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "data")
+        if not os.path.isdir(cls.data_dir) or not os.listdir(cls.data_dir):
+            raise unittest.SkipTest("no cached market data; run `vlab fetch` first")
+
+    def test_default_is_zero_interest(self):
+        """默认必须是 0 息 —— 保守口径，不给未实现的收益加分。"""
+        r = sandbox.analyze_weights({"sh511990": 0.5}, self.data_dir,
+                                    window="A", rebal="monthly")
+        if r.get("error"):
+            self.skipTest(r["error"])
+        self.assertEqual(r["cash_apy"], 0.0)
+        self.assertAlmostEqual(r["interest_earned"], 0.0, places=6)
+
+    def test_positive_rate_earns_interest(self):
+        """给定现金利率必须真的产生利息，并如实披露。"""
+        r0 = sandbox.analyze_weights({"sh511010": 0.5}, self.data_dir,
+                                     window="A", rebal="monthly", cash_apy=0.0)
+        r1 = sandbox.analyze_weights({"sh511010": 0.5}, self.data_dir,
+                                     window="A", rebal="monthly", cash_apy=0.018)
+        if r0.get("error") or r1.get("error"):
+            self.skipTest("data unavailable")
+        self.assertGreater(r1["interest_earned"], 0.0)
+        self.assertGreater(r1["metrics"]["cagr"], r0["metrics"]["cagr"])
+        self.assertAlmostEqual(r1["cash_apy"], 0.018, places=9)
+
+    def test_fully_invested_portfolio_earns_no_interest(self):
+        """满仓组合没有闲置现金，不该凭空产生利息。"""
+        r = sandbox.analyze_weights(
+            {"sh511990": 0.15, "sh511010": 0.20, "sh512890": 0.25,
+             "usXLF.OQ": 0.05, "sh510300": 0.15, "sh513100": 0.05,
+             "sh518880": 0.10, "usUUP.OQ": 0.05},
+            self.data_dir, window="A", rebal="monthly", cash_apy=0.05)
+        if r.get("error"):
+            self.skipTest(r["error"])
+        # 满仓仍有极少量现金（交易成本造成的），利息应远小于余额规模
+        self.assertLess(r["interest_earned"], 1_000_000 * 0.05)
+        self.assertGreaterEqual(r["interest_earned"], 0.0)
+
+    def test_engine_returns_interest_field(self):
+        """引擎必须返回现金利息字段，且 0 息时为 0。"""
+        from vlab import engine as E
+        dates = ["2020-01-02", "2020-01-03", "2020-01-06"]
+        mat = {"A": [100.0, 101.0, 102.0]}
+        res = E.backtest(E.const_weights({"A": 0.5}), mat, dates,
+                         start_cash=1e6, cash_apy=0.0)
+        self.assertIn("interest_earned", res)
+        self.assertEqual(res["interest_earned"], 0.0)
+        res2 = E.backtest(E.const_weights({"A": 0.5}), mat, dates,
+                          start_cash=1e6, cash_apy=0.05)
+        self.assertGreater(res2["interest_earned"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

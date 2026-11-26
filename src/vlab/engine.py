@@ -34,7 +34,7 @@ from __future__ import annotations
 from typing import Callable, Dict, Iterable, List, Optional, Sequence
 
 from . import guard
-from .metrics import summarize
+from .metrics import summarize, TRADING_DAYS
 
 # --------------------------------------------------------------------------
 # 资产池
@@ -256,6 +256,7 @@ def backtest(
     slip_bps: float = DEFAULT_SLIP_BPS,
     rebal_dates: Optional[Iterable[str]] = None,
     tolerance: float = 0.02,
+    cash_apy: float = 0.0,
 ) -> Dict:
     """执行一次带回测。
 
@@ -265,8 +266,15 @@ def backtest(
     * 佣金 ``fee_bps`` + 滑点 ``slip_bps``，买入上浮、卖出下压。
     * 现金不足以完成全部买入时，按比例缩放买入金额。
     * 权重偏离目标 2% 以内不交易（减少无意义的换手与成本）。
+    * ``cash_apy`` 是**闲置现金的年化利率**（默认 ``0.0``，即不计息）。
 
-    返回 ``{"curve": [{"d":..., "eq":...}], "trades": [...]}``。
+      这一项曾经被面板写成"按货币基金计息"，而引擎其实从未计息 ——
+      界面在撒谎。默认保持 0 是为了**保守**（不给未实现的收益加分），
+      但它必须是一个**显式参数**，并且在结果里如实披露实际赚到/亏了
+      多少利息，不能由界面替用户假设。
+
+    返回 ``{"curve": [{"d":..., "eq":...}], "trades": [...],
+    "interest_earned": ..., "cash_apy": ...}``。
     """
     fee = fee_bps / 1e4
     slip = slip_bps / 1e4
@@ -279,6 +287,10 @@ def backtest(
     pos: Dict[str, float] = {}      # code -> 份额
     curve: List[Dict] = []
     trades: List[Dict] = []
+    interest_earned = 0.0
+    # 现金按 (1+apy)^(1/244)-1 的日息复利，与 metrics 的 244 交易日/年一致
+    daily_cash_rate = ((1.0 + cash_apy) ** (1.0 / TRADING_DAYS) - 1.0
+                       if cash_apy > 0 else 0.0)
 
     for i, d in enumerate(dates):
         val = cash + sum(sh * (mat[c][i] or 0.0) for c, sh in pos.items())
@@ -292,13 +304,20 @@ def backtest(
                 cash = _rebalance(cash, pos, mat, dates, i, w, val, fee, slip,
                                   tolerance, trades)
 
+        # 闲置现金计息（在调仓之后 —— 当日的钱已经花在头寸上了）
+        if daily_cash_rate:
+            interest = cash * daily_cash_rate
+            cash += interest
+            interest_earned += interest
+
         # 净值在调仓之后记录：成交价即当日收盘价，净值不受调仓影响，
         # 只体现交易成本。这一点很重要 —— 否则日收益序列会多出一笔
         # "凭空"的负收益。
         val = cash + sum(sh * (mat[c][i] or 0.0) for c, sh in pos.items())
         curve.append({"d": d, "eq": val})
 
-    return {"curve": curve, "trades": trades}
+    return {"curve": curve, "trades": trades,
+            "interest_earned": interest_earned, "cash_apy": cash_apy}
 
 
 def _rebalance(cash, pos, mat, dates, i, w, target_val, fee, slip,

@@ -101,6 +101,7 @@ def analyze_weights(
     fee_bps: float = engine.DEFAULT_FEE_BPS,
     slip_bps: float = engine.DEFAULT_SLIP_BPS,
     split_ratio: float = 0.7,
+    cash_apy: float = 0.0,
 ) -> Dict:
     """跑一次自定义配置，回测 + 样本内/样本外切分。
 
@@ -145,7 +146,7 @@ def analyze_weights(
     fn = engine.const_weights(clean)
     rd = _rebal_dates(rebal, D)
     bt = {"start_cash": cash0, "fee_bps": fee_bps, "slip_bps": slip_bps,
-          "rebal_dates": rd}
+          "rebal_dates": rd, "cash_apy": cash_apy}
 
     res = engine.backtest(fn, M_, D, **bt)
     curve = res["curve"]
@@ -166,6 +167,10 @@ def analyze_weights(
         "trade_count": len(res["trades"]),
         "fee_bps": fee_bps,
         "slip_bps": slip_bps,
+        # 现金计息必须如实披露：引擎默认 0（保守），
+        # 界面不得替用户假设一个利率。
+        "cash_apy": cash_apy,
+        "interest_earned": res.get("interest_earned", 0.0),
     }
 
     # ---- 样本内 / 样本外 ----
