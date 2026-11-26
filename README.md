@@ -300,13 +300,17 @@ Formula 位于 [`aazh2026/homebrew-vlab`](https://github.com/aazh2026/homebrew-v
 
 **方式三：pip 安装（零依赖，Python 3.9+）**
 
-包已构建并由 CI 校验（wheel + sdist、`dependencies = []`），**PyPI 发布正在走流程中**，
-上架后即可：
+包已构建并由 CI 校验（wheel + sdist、`dependencies = []`）。**PyPI 发布正在走流程中**，
+在此之前可以直接从 GitHub Releases 装：
 
 ```bash
-pip install vlab
-vlab fetch && vlab report && vlab serve
+pip install https://github.com/aazh2026/vlab/releases/download/v1.1.1/vlab-1.1.1-py3-none-any.whl
+
+vlab --help
+vlab test          # 77 个回归测试
 ```
+
+PyPI 上架后即为 `pip install vlab`。
 
 > 三种方式产出的结果完全一致——引擎、指标、面板是同一份代码，
 > 差别只在于是从 wheel 安装、从 brew 安装，还是从工作区运行。
