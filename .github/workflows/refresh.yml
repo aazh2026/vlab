@@ -67,5 +67,8 @@ jobs:
           fi
           NEW_DATE=$(python3 -c "import json;print(json.load(open('docs/report.json')).get('generated_at','unknown'))")
           git commit -m "chore: daily data refresh (${NEW_DATE})"
+          # 定时刷新与人工推送可能撞车 —— 必须 rebase 后再推，
+          # 否则会因为 non-fast-forward 被拒（这正是本 workflow 首次运行失败的原因）。
+          git pull --rebase --autostash origin main
           git push origin main
           echo "已提交每日更新：${NEW_DATE}"
