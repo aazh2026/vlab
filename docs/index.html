@@ -157,6 +157,58 @@ footer{border-top:1px solid var(--line);margin-top:36px;padding:22px 0 0;color:v
 footer a{color:var(--tx2)}
 .empty{color:var(--tx3);padding:26px;text-align:center;font-size:13px}
 .loading{color:var(--tx3);padding:60px;text-align:center}
+
+/* ---------- sandbox (custom strategy lab) ---------- */
+.sb-grid{display:grid;grid-template-columns:minmax(300px,360px) 1fr;gap:18px}
+@media(max-width:900px){.sb-grid{grid-template-columns:1fr}}
+.sb-left{display:flex;flex-direction:column;gap:12px}
+.sb-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.sb-field label{font-size:11.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px}
+.sb-field select,.sb-field input[type=number],.sb-field input[type=text]{
+  background:var(--panel2);color:var(--tx);border:1px solid var(--line);
+  border-radius:7px;padding:7px 10px;font-size:13px;font-family:inherit;width:100%}
+.sb-field select:focus,.sb-field input:focus{outline:none;border-color:var(--acc)}
+.sb-assets{max-height:340px;overflow-y:auto;border:1px solid var(--line);
+  border-radius:9px;padding:4px 10px;background:var(--panel2)}
+.sb-asset{display:grid;grid-template-columns:1fr 62px 74px;gap:8px;
+  align-items:center;padding:5px 0;border-bottom:1px solid rgba(35,43,59,.6)}
+.sb-asset:last-child{border-bottom:none}
+.sb-asset .nm{font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-asset .nm small{color:var(--tx3);font-size:10.5px;margin-left:5px}
+.sb-asset input{background:var(--panel);color:var(--tx);border:1px solid var(--line);
+  border-radius:6px;padding:4px 6px;font-size:12px;width:100%;
+  font-variant-numeric:tabular-nums;text-align:right;font-family:inherit}
+.sb-asset input:focus{outline:none;border-color:var(--acc)}
+.sb-asset input:disabled{opacity:.4}
+.sb-asset .na{color:var(--warn);font-size:10px}
+.sb-total{display:flex;justify-content:space-between;align-items:center;
+  padding:9px 12px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:9px;font-size:13px;margin-top:10px}
+.sb-total .v{font-variant-numeric:tabular-nums;font-weight:600}
+.sb-total.warn{border-color:var(--warn)}
+.sb-total.warn .v{color:var(--warn)}
+.sb-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.sb-presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.sb-out{display:flex;flex-direction:column;gap:12px;min-width:0}
+.sb-ho{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.sb-ho{grid-template-columns:1fr}}
+.sb-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px}
+.sb-card .ttl{font-size:11.5px;color:var(--tx3);text-transform:uppercase;
+  letter-spacing:.5px;margin-bottom:8px}
+.sb-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12.5px}
+.sb-row .k{color:var(--tx2)}
+.sb-row .v{font-variant-numeric:tabular-nums;font-weight:500}
+.sb-row .v.pos{color:var(--up)} .sb-row .v.neg{color:var(--dn)}
+.sb-msg{border-left:3px solid var(--warn);background:rgba(255,159,67,.07);
+  color:#ffcf9a;padding:9px 12px;border-radius:6px;font-size:12px;margin:10px 0}
+.sb-msg.err{border-left-color:var(--dn);background:rgba(255,107,107,.08);color:#ffb3b3}
+.sb-msg.ok{border-left-color:var(--up);background:rgba(61,220,151,.07);color:#a5e9c9}
+.sb-run{width:100%;background:var(--acc);border-color:var(--acc);color:#fff;
+  font-weight:600;padding:10px}
+.sb-run:disabled{opacity:.55;cursor:progress}
+.sb-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--tx2);margin-top:6px}
+.sb-legend i{display:inline-block;width:14px;height:3px;border-radius:2px;
+  margin-right:5px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -201,6 +253,15 @@ footer a{color:var(--tx2)}
    Data source: /api/report  (see vlab.web.server)
    =================================================================== */
 
+const SB_PRESETS = {
+  steve: {"sh511990":15,"sh511010":20,"sh512890":25,"usXLF.OQ":5,
+          "sh510300":15,"sh513100":5,"sh518880":10,"usUUP.OQ":5},
+  "60/40": {"sh511010":40,"sh510300":30,"sh512890":20,"sh518880":10},
+  gold:  {"sh518880":30,"sh511990":20,"sh511010":20,"sh510300":30},
+  cash:  {"sh511990":100},
+};
+const SB_PRESET_STEVE = SB_PRESETS.steve;
+
 const S = {
   lang: "zh",        // "zh" | "en"
   win: "A",
@@ -210,6 +271,17 @@ const S = {
   sortDir: -1,
   focus: "steve_gold",
   propScn: "base",   // 房产模块情景：base | steve
+  // ---- sandbox state ----
+  sb: {
+    weights: Object.assign({}, SB_PRESET_STEVE),  // 默认 Steve 配置，打开即可跑
+    win: "A",           // 窗口（与主面板独立）
+    rebal: "monthly",
+    cash0: 1000000,
+    cashApy: 0,        // 闲置现金年化利率（%）—— 默认 0，保守口径
+    result: null,
+    busy: false,
+    universe: null,     // 可投资状态
+  },
 };
 
 const PAL = ["#4c9aff","#3ddc97","#ffb84d","#ff6b6b","#a78bfa","#4dd0e1",
@@ -245,6 +317,7 @@ async function load() {
     const r = await fetch("report.json", { cache: "no-store" });
     if (!r.ok) throw new Error("HTTP " + r.status);
     S.data = await r.json();
+    await sbLoadUniverse();
     render();
   } catch (e) {
     app.innerHTML = "";
@@ -309,6 +382,9 @@ function render() {
 
   /* property: cash vs house */
   if (D.property) app.appendChild(buildPropertyPanel(D.property));
+
+  /* sandbox: custom strategy lab */
+  app.appendChild(buildSandboxPanel(D));
 }
 
 function escapeHtml(s) {
@@ -753,6 +829,349 @@ $("#btn-rebuild").onclick = async () => {
 };
 
 load();
+
+/* ================================================================
+   Sandbox — custom strategy lab
+   Users configure weights, run a backtest, and see in-sample vs
+   out-of-sample side by side.  Weights below 1.0 stay in cash.
+   Weights on assets that were not listed at window start are NOT
+   redistributed to other assets — they stay in cash and are flagged.
+   ================================================================ */
+
+async function sbLoadUniverse() {
+  if (S.sb.universe) return S.sb.universe;
+  try {
+    const r = await fetch("api/universe?window=" + encodeURIComponent(S.sb.win),
+                          { cache: "no-store" });
+    if (r.ok) {
+      const j = await r.json();
+      S.sb.universe = j.universe || [];
+    }
+  } catch (e) { /* keep going with report universe */ }
+  if (!S.sb.universe && S.data && S.data.universe) {
+    S.sb.universe = S.data.universe.map(u => ({
+      code: u.code, name: u.name, class: u.class,
+      listed_at_start: true, first_date: null, has_data: true }));
+  }
+  return S.sb.universe || [];
+}
+
+function sbWeightObj() {
+  const out = {};
+  for (const k in S.sb.weights) {
+    const v = parseFloat(S.sb.weights[k]);
+    if (isFinite(v) && v > 0) out[k] = v / 100;
+  }
+  return out;
+}
+
+async function sbRun() {
+  if (S.sb.busy) return;
+  const w = sbWeightObj();
+  if (!Object.keys(w).length) {
+    S.sb.result = { error: t("请至少给一个资产设置权重",
+                             "Give at least one asset a weight") };
+    render(); return;
+  }
+  S.sb.busy = true; render();
+  try {
+    const r = await fetch("api/sandbox", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        weights: w, window: S.sb.win, rebal: S.sb.rebal,
+        cash0: S.sb.cash0, split_ratio: 0.7,
+        cash_apy: (S.sb.cashApy || 0) / 100,
+      }),
+    });
+    const j = await r.json();
+    S.sb.result = j;
+  } catch (e) {
+    S.sb.result = { error: String(e) };
+  }
+  S.sb.busy = false; render();
+}
+
+function sbRow(k, v, cls) {
+  const r = el("div", "sb-row");
+  r.appendChild(el("span", "k", k));
+  r.appendChild(el("span", "v " + (cls || ""), v));
+  return r;
+}
+
+function buildSandboxPanel(D) {
+  const p = el("div", "panel");
+  const h = el("h2");
+  h.innerHTML = t("自定义策略沙盒","Custom strategy sandbox") +
+    ' <span class="en">' +
+    t("配权重 → 跑回测 → 看样本内/样本外",
+       "set weights → run → in-sample vs out-of-sample") + "</span>";
+  p.appendChild(h);
+  p.appendChild(el("p", "cap", t(
+    "权重百分比。不足 100% 的部分留在现金，不会被静默归一化；" +
+    "窗口起点尚未上市的标的，其权重同样留在现金并单独标注。",
+    "Weights in percent. Anything below 100% stays in cash — it is never " +
+    "silently normalised. Assets not yet listed at the window start also " +
+    "keep their weight in cash, and are flagged.")));
+
+  const grid = el("div", "sb-grid");
+  const left = el("div", "sb-left");
+  const right = el("div", "sb-out");
+  grid.appendChild(left); grid.appendChild(right);
+  p.appendChild(grid);
+
+  /* ---- presets ---- */
+  const pre = el("div", "sb-presets");
+  Object.keys(SB_PRESETS).forEach(k => {
+    const b = el("button", "ghost", k === "steve" ? t("Steve 配置","Steve")
+                  : k === "60/40" ? "60/40" : k === "gold" ? t("黄金 30%","Gold 30%")
+                  : t("全现金","All cash"));
+    b.onclick = () => {
+      S.sb.weights = Object.assign({}, SB_PRESETS[k]);
+      S.sb.result = null; render();
+    };
+    pre.appendChild(b);
+  });
+  left.appendChild(pre);
+
+  /* ---- window + rebalance + capital ---- */
+  const f1 = el("div", "sb-field");
+  f1.appendChild(el("label", null, t("回测窗口","Evaluation window")));
+  const selW = el("select");
+  Object.keys(D.windows).forEach(k => {
+    const o = el("option", null, D.windows[k].label);
+    o.value = k; if (k === S.sb.win) o.selected = true;
+    selW.appendChild(o);
+  });
+  selW.onchange = () => {
+    S.sb.win = selW.value; S.sb.universe = null; S.sb.result = null; render();
+  };
+  f1.appendChild(selW);
+  left.appendChild(f1);
+
+  const f2 = el("div", "sb-field");
+  f2.appendChild(el("label", null, t("调仓频率","Rebalance frequency")));
+  const selR = el("select");
+  [["monthly", t("每月","Monthly")], ["quarterly", t("每季","Quarterly")],
+   ["yearly", t("每年","Yearly")], ["hold", t("买入持有（仅一次）","Buy & hold (once)")]]
+    .forEach(([v, lbl]) => {
+      const o = el("option", null, lbl); o.value = v;
+      if (v === S.sb.rebal) o.selected = true;
+      selR.appendChild(o);
+    });
+  selR.onchange = () => { S.sb.rebal = selR.value; S.sb.result = null; };
+  f2.appendChild(selR);
+  left.appendChild(f2);
+
+  const f3 = el("div", "sb-field");
+  f3.appendChild(el("label", null, t("初始资金","Initial capital")));
+  const inpC = el("input"); inpC.type = "number"; inpC.value = S.sb.cash0;
+  inpC.onchange = () => { S.sb.cash0 = parseFloat(inpC.value) || 1e6; };
+  f3.appendChild(inpC);
+  left.appendChild(f3);
+
+  /* ---- cash rate: 闲置现金年化利率（此前引擎按 0 处理，界面却宣称计息） ---- */
+  const f4 = el("div", "sb-field");
+  f4.appendChild(el("label", null, t("闲置现金年化利率","Idle cash rate (annual)")));
+  const inpA = el("input"); inpA.type = "number"; inpA.step = "0.1";
+  inpA.min = "0"; inpA.max = "20";
+  inpA.value = S.sb.cashApy;
+  inpA.title = t("默认 0%（保守口径）。设为 1.5 相当于假设闲置资金能拿到 1.5% 年化。",
+                  "0% by default (conservative). 1.5 means idle cash earns 1.5%/yr.");
+  inpA.onchange = () => { S.sb.cashApy = parseFloat(inpA.value) || 0; };
+  f4.appendChild(inpA);
+  f4.appendChild(el("small", "cap", t("%","%")));
+  left.appendChild(f4);
+
+  /* ---- asset list ---- */
+  const assets = el("div", "sb-assets");
+  const uni = S.sb.universe || (S.data && S.data.universe) || [];
+  const byCode = {};
+  uni.forEach(u => { byCode[u.code] = u; });
+  const codes = Object.keys(byCode).length
+    ? Object.keys(byCode)
+    : (S.data ? S.data.universe.map(u => u.code) : []);
+  codes.forEach(code => {
+    const u = byCode[code] || { name: code, class: "" };
+    const row = el("div", "sb-asset");
+    const nm = el("div", "nm");
+    nm.appendChild(el("span", null, u.name));
+    nm.appendChild(el("small", null, u.class || ""));
+    if (u.listed_at_start === false) {
+      const na = el("span", "na", t("未上市","not listed"));
+      nm.appendChild(na);
+    }
+    row.appendChild(nm);
+    const inp = el("input");
+    inp.type = "number"; inp.step = "1"; inp.min = "0"; inp.max = "100";
+    inp.placeholder = "0";
+    inp.value = S.sb.weights[code] != null ? S.sb.weights[code] : "";
+    inp.oninput = () => {
+      S.sb.weights[code] = inp.value;
+      const sum = Object.values(sbWeightObj()).reduce((a, b) => a + b, 0);
+      const tot = document.querySelector("#sb-total-v");
+      if (tot) {
+        tot.textContent = (sum * 100).toFixed(1) + "%";
+        const box = tot.closest(".sb-total");
+        if (box) box.classList.toggle("warn", sum > 1.0000001);
+      }
+    };
+    row.appendChild(inp);
+    const clr = el("button", "ghost", "×");
+    clr.style.padding = "4px 8px"; clr.style.fontSize = "12px";
+    clr.onclick = () => { delete S.sb.weights[code]; S.sb.result = null; render(); };
+    row.appendChild(clr);
+    assets.appendChild(row);
+  });
+  left.appendChild(assets);
+
+  const sum = Object.values(sbWeightObj()).reduce((a, b) => a + b, 0);
+  const totBox = el("div", "sb-total" + (sum > 1.0000001 ? " warn" : ""));
+  totBox.appendChild(el("span", null,
+    t("已配置权重","Configured") + (sum > 1.0000001
+      ? t("（超过 100%，将被按比例缩放）"," (over 100% — will be scaled down)") : "")));
+  const totV = el("span", "v", (sum * 100).toFixed(1) + "%");
+  totV.id = "sb-total-v";
+  totBox.appendChild(totV);
+  left.appendChild(totBox);
+  if (sum < 0.9999999) {
+    left.appendChild(el("div", "sb-msg", t(
+      "剩余 " + ((1 - sum) * 100).toFixed(1) + "% 留在现金。现金利率见下方设置（默认 0%，保守口径）。",
+      (1 - sum) * 100 + "% stays in cash. Set the cash rate below (0% by default — conservative).")));
+  }
+
+  const run = el("button", "sb-run", S.sb.busy
+    ? t("回测中…","Running…") : t("跑回测","Run backtest"));
+  run.disabled = !!S.sb.busy;
+  run.onclick = sbRun;
+  left.appendChild(run);
+
+  /* ---- results ---- */
+  const R = S.sb.result;
+  if (!R) {
+    right.appendChild(el("div", "empty",
+      t("设置权重后点「跑回测」。结果会显示样本内与样本外两段。",
+        "Set weights and hit Run. You'll get in-sample and out-of-sample.")));
+    return p;
+  }
+  if (R.error) {
+    const m = el("div", "sb-msg err", R.error);
+    right.appendChild(m);
+    return p;
+  }
+
+  if (R.not_listed && R.not_listed.length) {
+    const names = R.not_listed.map(c => (byCode[c] || {}).name || c).join("、");
+    right.appendChild(el("div", "sb-msg", t(
+      "以下标的在窗口起点尚未上市，其权重留在现金（未转嫁给其他资产）：" + names,
+      "Not listed at window start — weight stays in cash, not redistributed: " + names)));
+  }
+  if (R.scaled_to_one) {
+    right.appendChild(el("div", "sb-msg", t(
+      "配置的权重之和超过 100%，已按比例缩放到 100%。",
+      "Configured weights exceed 100% and were scaled to 100%.")));
+  }
+
+  const m = R.metrics;
+  const card = el("div", "sb-card");
+  card.appendChild(el("div", "ttl", t("全样本指标","Full-sample metrics")));
+  card.appendChild(sbRow(t("年化收益","CAGR"), pct(m.cagr), sgn(m.cagr)));
+  card.appendChild(sbRow(t("最大回撤","Max drawdown"), pct(m.maxdd), "neg"));
+  card.appendChild(sbRow("Sharpe", m.sharpe.toFixed(2), sgn(m.sharpe)));
+  card.appendChild(sbRow("Sortino", m.sortino.toFixed(2), sgn(m.sortino)));
+  card.appendChild(sbRow(t("总收益","Total return"), pct(m.total), sgn(m.total)));
+  card.appendChild(sbRow(t("年化波动","Volatility"), pct(m.vol)));
+  card.appendChild(sbRow(t("期末净值","Final equity"),
+                         "¥" + money(R.curve.final_eq)));
+  card.appendChild(sbRow(t("交易笔数","Trades"), String(R.trade_count)));
+  card.appendChild(sbRow(t("现金利率","Cash rate"),
+    (R.cash_apy != null ? (R.cash_apy * 100).toFixed(2) + "%" : "—")));
+  if (R.interest_earned != null) {
+    card.appendChild(sbRow(t("现金利息","Interest earned"),
+      "¥" + money(R.interest_earned)));
+  }
+  card.appendChild(sbRow(t("区间","Period"), m.start + " → " + m.end));
+  right.appendChild(card);
+
+  /* in-sample vs out-of-sample */
+  if (R.holdout) {
+    const ho = R.holdout;
+    const hoBox = el("div", "sb-ho");
+    const mk = (title, mm, days) => {
+      const c = el("div", "sb-card");
+      c.appendChild(el("div", "ttl", title));
+      if (!mm || !mm.cagr && mm.cagr !== 0) {
+        c.appendChild(el("div", "sb-row", "—"));
+        return c;
+      }
+      c.appendChild(sbRow(t("年化","CAGR"), pct(mm.cagr), sgn(mm.cagr)));
+      c.appendChild(sbRow(t("最大回撤","Max DD"), pct(mm.maxdd), "neg"));
+      c.appendChild(sbRow("Sharpe", (mm.sharpe || 0).toFixed(2), sgn(mm.sharpe)));
+      c.appendChild(sbRow(t("交易日","Trading days"), String(days || 0)));
+      return c;
+    };
+    hoBox.appendChild(mk(t("样本内（至 " + ho.split_date + "）",
+                           "In-sample (to " + ho.split_date + ")"),
+                         ho.is, ho.n_is));
+    hoBox.appendChild(mk(t("样本外（自 " + ho.split_date + "）",
+                           "Out-of-sample (from " + ho.split_date + ")"),
+                         ho.oos, ho.n_oos));
+    right.appendChild(hoBox);
+
+    const d = ho.degradation || {};
+    const deg = el("div", "sb-card");
+    deg.appendChild(el("div", "ttl", t("样本外衰减","Out-of-sample degradation")));
+    deg.appendChild(sbRow(t("年化变化","CAGR change"),
+                          (d.cagr != null ? (d.cagr > 0 ? "+" : "") + (d.cagr * 100).toFixed(2) + " pp" : "—"),
+                          sgn(d.cagr)));
+    deg.appendChild(sbRow(t("夏普变化","Sharpe change"),
+                          (d.sharpe != null ? (d.sharpe > 0 ? "+" : "") + d.sharpe.toFixed(3) : "—"),
+                          sgn(d.sharpe)));
+    deg.appendChild(sbRow(t("回撤变化","Max DD change"),
+                          (d.maxdd != null ? (d.maxdd > 0 ? "+" : "") + (d.maxdd * 100).toFixed(2) + " pp" : "—"),
+                          sgn(d.maxdd)));
+    right.appendChild(deg);
+  }
+
+  /* curve */
+  const cv = R.curve;
+  if (cv && cv.dates && cv.dates.length) {
+    const cbox = el("div", "sb-card");
+    cbox.appendChild(el("div", "ttl", t("净值与回撤","Equity & drawdown")));
+    const host = el("div");
+    cbox.appendChild(host);
+    const xs = cv.dates.map((_, i) => i);
+    const ch = makeChart(host, 250);
+    const logs = cv.eq.map(v => Math.log(Math.max(v, 1)));
+    axes(ch, xs, logs, v => (Math.exp(v) / 1e6).toFixed(2) + "M", cv.dates);
+    ch.s.appendChild(svg("polyline", {
+      points: cv.eq.map((v, i) => ch.X(i) + "," + ch.Y(Math.log(Math.max(v, 1)))).join(" "),
+      fill: "none", stroke: "#4c9aff", "stroke-width": 2.2,
+      "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    const dbox = el("div");
+    cbox.appendChild(dbox);
+    const ch2 = makeChart(dbox, 150);
+    axes(ch2, xs, cv.dd.v, v => (v * 100).toFixed(0) + "%", cv.dates);
+    ch2.s.appendChild(svg("polyline", {
+      points: cv.dd.v.map((v, i) => ch2.X(i) + "," + ch2.Y(v)).join(" "),
+      fill: "none", stroke: "#ff6b6b", "stroke-width": 1.8,
+      "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    const lg = el("div", "sb-legend");
+    lg.innerHTML = '<span><i style="background:#4c9aff"></i>' +
+      t("净值（对数轴）","Equity (log)") + '</span><span><i style="background:#ff6b6b"></i>' +
+      t("回撤","Drawdown") + '</span>';
+    cbox.appendChild(lg);
+    right.appendChild(cbox);
+  }
+
+  right.appendChild(el("div", "sb-msg", t(
+    "以上均为历史回测，不预示未来收益，不构成投资建议。样本外表现只说明" +
+    "这份配置在历史上没被参数搜索污染过，不代表未来有效。",
+    "All results are historical backtests. Past performance does not predict " +
+    "future returns, and nothing here is investment advice.")));
+
+  return p;
+}
 
 /* ================================================================
    Property module — "持币 vs 持房" / cash vs house
