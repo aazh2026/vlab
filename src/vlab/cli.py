@@ -89,12 +89,28 @@ def cmd_serve(args):
 
 
 # --------------------------------------------------------------------------
+def _tests_dir():
+    """Locate the regression suite.
+
+    The package ships under ``src/vlab`` in the source tree and under
+    ``libexec/vlab`` in a Homebrew install, so the suite is not always two
+    levels above the package. Probe the plausible locations instead of
+    assuming one layout.
+    """
+    for candidate in (os.path.join(ROOT, "tests"),
+                      os.path.join(HERE, "tests"),
+                      os.path.join(os.path.dirname(HERE), "tests")):
+        if os.path.isdir(candidate):
+            return candidate
+    return os.path.join(ROOT, "tests")
+
+
 def cmd_test(args):
     """跑回归测试。"""
     import unittest
-    tests_dir = os.path.join(ROOT, "tests")
+    tests_dir = _tests_dir()
     loader = unittest.TestLoader()
-    suite = loader.discover(tests_dir)
+    suite = loader.discover(tests_dir, top_level_dir=tests_dir)
     runner = unittest.TextTestRunner(verbosity=2)
     return 0 if runner.run(suite).wasSuccessful() else 1
 
