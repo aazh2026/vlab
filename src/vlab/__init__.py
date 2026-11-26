@@ -26,7 +26,7 @@
 免责声明：本项目仅为量化研究与教学用途。所有回测结果均基于历史数据，
 **不预示未来收益，不构成任何投资建议**。
 """
-from . import engine, metrics, strategies, windows  # noqa: F401
+from . import engine, guard, metrics, strategies, validate, windows  # noqa: F401
 from .engine import (  # noqa: F401
     GOLD_BANDS,
     STRATEGY_CURRENT,
@@ -55,11 +55,19 @@ from .metrics import (  # noqa: F401
 )
 from .strategies import STRATEGIES  # noqa: F401
 from .windows import WINDOWS  # noqa: F401
+from .guard import LookAheadError  # noqa: F401
+from .validate import (  # noqa: F401
+    evaluate,
+    holdout,
+    parameter_sweep,
+    walk_forward,
+)
 
 __version__ = "1.0.0"
 
 __all__ = [
-    "engine", "metrics", "strategies", "windows",
+    "engine", "guard", "metrics", "strategies", "validate", "windows",
+    "LookAheadError", "evaluate", "holdout", "parameter_sweep", "walk_forward",
     "UNIVERSE", "STRATEGY_CURRENT", "GOLD_BANDS", "STRATEGIES", "WINDOWS",
     "load_series", "trading_dates", "align", "month_ends", "backtest", "run",
     "normalize_weights", "const_weights", "bench_from_mat",

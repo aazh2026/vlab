@@ -33,6 +33,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict, Iterable, List, Optional, Sequence
 
+from . import guard
 from .metrics import summarize
 
 # --------------------------------------------------------------------------
@@ -283,7 +284,10 @@ def backtest(
         val = cash + sum(sh * (mat[c][i] or 0.0) for c, sh in pos.items())
 
         if d in rebal_dates:
-            w = normalize_weights(weights_fn(d, mat, dates, i) or {}, mat, i)
+            # 策略只拿到"截至今天"的视图：mat[c][j] 中 j > i 会抛
+            # LookAheadError，把静默的未来函数变成响亮的错误。
+            mview, dview = guard.guard_view(mat, dates, i)
+            w = normalize_weights(weights_fn(d, mview, dview, i) or {}, mat, i)
             if w:
                 cash = _rebalance(cash, pos, mat, dates, i, w, val, fee, slip,
                                   tolerance, trades)

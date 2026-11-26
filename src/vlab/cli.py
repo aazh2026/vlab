@@ -15,6 +15,10 @@ import argparse
 import os
 import sys
 
+DISCLAIMER_TEXT = (
+    "免责声明：本工具所有结果均为基于历史数据的回测，不预示未来收益，"
+    "不构成任何投资建议、要约或推荐。投资有风险，决策需自负。")
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 DATA_DIR = os.path.join(ROOT, "data")
@@ -121,6 +125,77 @@ def cmd_compare(args):
 
 
 # --------------------------------------------------------------------------
+def cmd_validate(args):
+    """用用户自己的策略文件做有效性检验。
+
+    策略文件需定义 ``weights_fn(date, mat, dates, index) -> {code: weight}``。
+    """
+    import importlib.util
+    from . import engine, validate as V
+
+    path = os.path.abspath(args.strategy)
+    if not os.path.exists(path):
+        print("找不到策略文件：%s" % path, file=sys.stderr)
+        return 1
+
+    spec = importlib.util.spec_from_file_location("vlab_user_strategy", path)
+    mod = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(mod)
+    except Exception as e:
+        print("策略文件加载失败：%s" % e, file=sys.stderr)
+        return 1
+
+    fn = getattr(mod, "weights_fn", None)
+    if fn is None:
+        print("策略文件必须定义 weights_fn(date, mat, dates, index)", file=sys.stderr)
+        return 1
+
+    series = engine.load_series()
+    if not series:
+        print("没有本地数据，请先运行：python3 -m vlab fetch", file=sys.stderr)
+        return 1
+    dates = engine.trading_dates(series)
+    mat = engine.align(series, dates)
+
+    from . import windows as W
+    win_bounds = {}
+    for k in (args.windows or ["A", "B"]):
+        if k in W.WINDOWS:
+            a, b, _l, _n = W.WINDOWS[k]
+            win_bounds[k] = (a, b)
+
+    print("\n=== 全样本 ===")
+    rep = V.evaluate(fn, mat, dates, split_ratio=args.split, windows=win_bounds)
+    _print_metrics("全样本", rep.get("full") or {})
+
+    for k, m in (rep.get("windows") or {}).items():
+        _print_metrics("窗口 %s" % k, m)
+
+    ho = rep.get("holdout") or {}
+    if ho:
+        print("\n=== 样本外检验（切分日 %s）===" % ho.get("split_date"))
+        _print_metrics("样本内", ho.get("is") or {})
+        _print_metrics("样本外", ho.get("oos") or {})
+        deg = ho.get("degradation") or {}
+        if "cagr" in deg:
+            print("  年化衰减：%+.2f pp    夏普衰减：%+.2f"
+                  % (deg["cagr"] * 100, deg.get("sharpe", 0.0)))
+
+    print("\n" + DISCLAIMER_TEXT)
+    return 0
+
+
+def _print_metrics(label, m):
+    if not m:
+        print("  %s: （数据不足）" % label)
+        return
+    print("  %s: 年化 %.2f%%  回撤 %.2f%%  夏普 %.2f  Calmar %.2f  交易日 %d"
+          % (label, m.get("cagr", 0) * 100, m.get("maxdd", 0) * 100,
+             m.get("sharpe", 0), m.get("calmar", 0), m.get("days", 0)))
+
+
+# --------------------------------------------------------------------------
 def main(argv=None):
     p = argparse.ArgumentParser(
         prog="vlab",
@@ -148,6 +223,12 @@ def main(argv=None):
     pc = sub.add_parser("compare", help="命令行输出策略对比表")
     pc.add_argument("--windows", nargs="*", default=["A", "B"])
     pc.set_defaults(func=cmd_compare)
+
+    pv = sub.add_parser("validate", help="用自定义策略做有效性检验（样本内/样本外）")
+    pv.add_argument("strategy", help="策略文件路径，需定义 weights_fn(date, mat, dates, index)")
+    pv.add_argument("--split", type=float, default=0.7, help="样本内占比，默认 0.7")
+    pv.add_argument("--windows", nargs="*", default=["A", "B"])
+    pv.set_defaults(func=cmd_validate)
 
     args = p.parse_args(argv)
     return args.func(args)
