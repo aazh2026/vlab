@@ -41,6 +41,21 @@ def cmd_fetch(args):
     codes = list(args.codes) if args.codes else [c for c, *_ in UNIVERSE]
     codes += ["ixsh000300", "ixsh000922", "ixsh000015", "ixsh000905"]
     ok, fail = 0, 0
+    # 汇率必须一起抓 —— data/ 不入库，CI 上没有缓存就没有换算，
+    # 美元价会被静默当成人民币（那正是 BUG-5）。
+    try:
+        from .datasource import fetch_fx
+        fx = fetch_fx(DATA_DIR, force=args.force)
+        if fx:
+            print(f"  ✓ {'fx_usdcny':14} n={len(fx):6}  "
+                  f"{fx[0]['d']} -> {fx[-1]['d']}")
+            ok += 1
+        else:
+            print(f"  ✗ {'fx_usdcny':14} 抓取失败（美元资产将不做汇率换算）")
+            fail += 1
+    except Exception as e:
+        print(f"  ✗ {'fx_usdcny':14} 抓取失败：{e}")
+        fail += 1
     for c in dict.fromkeys(codes):
         rows = fetch(c, DATA_DIR, force=args.force)
         if rows:
