@@ -5,10 +5,12 @@
 
 路由
 ----
-``/``            面板页面（HTML）
-``/api/report``  回测报告 JSON
-``/api/rebuild`` 重新抓取数据并生成报告（POST/GET 均可）
-``/healthz``     健康检查
+``/``                    面板页面（HTML）
+``/api/report``          回测报告 JSON
+``/api/rebuild``         重新抓取数据并生成报告（POST/GET 均可）
+``/api/sandbox``         自定义策略沙盒：POST 权重配置，回测 + 样本内/外
+``/api/universe``        各标的在指定窗口内的可投资状态
+``/healthz``             健康检查
 """
 from __future__ import annotations
 
@@ -26,7 +28,7 @@ class DashboardHandler(BaseHTTPRequestHandler):
     data_dir = DATA_DIR = ""
     web_dir = WEB_DIR = ""
     cache_path = ""
-    server_version = "vlab/1.0"
+    server_version = "vlab/1.1"
 
     def log_message(self, fmt, *args):  # 静音默认日志
         pass
@@ -69,6 +71,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self._json({"error": "report not built; run `python3 -m vlab report`"}, 503)
         elif path == "/api/rebuild":
             self._rebuild()
+        elif path == "/api/universe":
+            self._universe()
+        elif path == "/api/sandbox":
+            self._sandbox()
         elif path == "/healthz":
             self._json({"ok": True, "ts": time.time()})
         elif path == "/favicon.ico":
@@ -77,7 +83,73 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._json({"error": "not found"}, 404)
 
     def do_POST(self):
+        path = self.path.split("?")[0]
+        if path == "/api/sandbox":
+            self._sandbox()
+            return
         self.do_GET()
+
+    # -- sandbox ----------------------------------------------------------
+    def _read_json_body(self):
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            n = 0
+        if n <= 0:
+            return {}
+        raw = self.rfile.read(n)
+        try:
+            obj = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return None
+        return obj if isinstance(obj, dict) else None
+
+    def _sandbox(self):
+        """自定义策略沙盒：跑一次回测 + 样本内/样本外切分。
+
+        用户在面板上配置资产权重，这里负责跑。权重不足 1 的部分留在
+        现金；不可投资的标的权重不转嫁 —— 这两条都由引擎保证。
+        """
+        body = self._read_json_body()
+        if body is None:
+            self._json({"error": "invalid JSON body"}, 400)
+            return
+        weights = body.get("weights") or {}
+        if not isinstance(weights, dict):
+            self._json({"error": "weights must be an object"}, 400)
+            return
+        try:
+            from vlab import sandbox
+            res = sandbox.analyze_weights(
+                weights,
+                data_dir=self.data_dir,
+                window=body.get("window") or "A",
+                rebal=body.get("rebal") or "monthly",
+                cash0=float(body.get("cash0") or 1_000_000.0),
+                split_ratio=float(body.get("split_ratio") or 0.7),
+            )
+        except Exception as exc:
+            self._json({"error": f"{type(exc).__name__}: {exc}"}, 500)
+            return
+        self._json(res)
+
+    def _universe(self):
+        """各标的在指定窗口内的可投资状态。"""
+        import sys
+        sys.path.insert(0, os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))))
+        from vlab import sandbox
+        try:
+            win = "A"
+            if "?" in self.path:
+                from urllib.parse import parse_qs
+                q = parse_qs(self.path.split("?", 1)[1])
+                win = (q.get("window") or ["A"])[0]
+            rows = sandbox.universe_availability(self.data_dir, win)
+        except Exception as exc:
+            self._json({"error": str(exc)}, 500)
+            return
+        self._json({"window": win, "universe": rows})
 
     # -- rebuild ----------------------------------------------------------
     def _rebuild(self):
