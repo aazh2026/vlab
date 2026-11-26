@@ -56,6 +56,8 @@ If this repo saved you from a silently broken backtest, a ⭐ is the most direct
 - **你在做资产配置 / 组合管理** —— 面板里 26 条策略曲线 + 可排序绩效表 + 年度收益链式还原，复制粘贴就能当内部看板
 - **你在评估要不要自己写个回测引擎** —— 别写。这个仓库是纯标准库、零依赖、可以直接 `git clone` 跑起来的
 - **你关心"回测软件的 bug 率"** —— 这个项目的 bug 清单和修复过程本身就是一份公开的案例研究
+- **你在做参数网格搜索 / 因子筛选** —— `overfit gap` 直接告诉你「样本内挑出来的最好」有多少是运气；`oracle_oos` 是那个你本可以拿到、但没拿到的上界
+- **你担心自己的策略偷看了未来** —— 护栏让 `mat[c][i+1]` 直接抛错，而不是安静地返回未来价格
 
 **如果你只想看一个数字**：这套配置的价值是**把回撤压到约 −10%**，代价是每年少约 5.7 个百分点收益。它不是"更好的赚钱方法"，是"活下来的方法"。
 
@@ -550,6 +552,8 @@ If **any** of these apply, this repo is directly useful to you:
 - **You work on allocation or portfolio management** — 26 strategy curves, a sortable performance table, and chained yearly returns you can lift straight into an internal dashboard
 - **You were about to write your own backtest engine** — don't. Pure standard library, zero dependencies, `git clone` and run
 - **You care about how buggy backtest software tends to be** — the bug list and the fixes are a public case study
+- **You run parameter sweeps or screen factors** — `overfit gap` tells you how much of your "best in-sample" result was luck; `oracle_oos` is the upper bound you didn't capture
+- **You worry your strategy peeked at the future** — the guard makes `mat[c][i+1]` raise instead of silently returning a future price
 
 **If you only read one number**: this allocation's job is to hold drawdown near **−10%**, and the price is about **5.7 percentage points of annual return**. It is not a better way to make money; it is a way to survive.
 
