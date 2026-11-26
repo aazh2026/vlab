@@ -12,7 +12,7 @@
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
 [![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://postcodeengineering.com/vlab/)
 [![Release](https://img.shields.io/github/v/release/aazh2026/vlab.svg)](https://github.com/aazh2026/vlab/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-77%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-93%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
 [![Last Commit](https://img.shields.io/github/last-commit/aazh2026/vlab)](https://github.com/aazh2026/vlab/commits/main)
 [![Discussions](https://img.shields.io/github/discussions/aazh2026/vlab?label=Discussion)](https://github.com/aazh2026/vlab/discussions)
 
@@ -51,7 +51,7 @@ If this repo saved you from a silently broken backtest, a ⭐ is the most direct
 
 如果你符合下面**任意一条**，这个仓库对你有直接价值：
 
-- **你写过自己的回测脚本** —— 这里的 77 个回归测试就是一份「常见坑清单」，可以直接拿去对照你的代码
+- **你写过自己的回测脚本** —— 这里的 93 个回归测试就是一份「常见坑清单」，可以直接拿去对照你的代码
 - **你相信"回测数字"但不确定口径** —— 双窗口强制分离、不可投资部分留在现金、超额权重不归一化，这三条会改变你的结论
 - **你在做资产配置 / 组合管理** —— 面板里 26 条策略曲线 + 可排序绩效表 + 年度收益链式还原，复制粘贴就能当内部看板
 - **你在评估要不要自己写个回测引擎** —— 别写。这个仓库是纯标准库、零依赖、可以直接 `git clone` 跑起来的
@@ -82,7 +82,7 @@ If this repo saved you from a silently broken backtest, a ⭐ is the most direct
 | **货币 ETF 收益蒸发** | 净值恒定 100、收益以份额派发 → "全现金"年化显示 **0%**（真实 1.67%） | 按 1.8% 年化合成 |
 | **权重过度归一化** | 未上市资产的权重被挤到少数可交易资产 → 制造出虚假的 **-30% 单年跌幅** | 超额权重留在现金 |
 
-**这些 bug 现在每一个都有专门的回归测试钉死**（`tests/test_regressions.py` + `tests/test_property.py`，**77 个测试**，0.4 秒跑完）。
+**这些 bug 现在每一个都有专门的回归测试钉死**（`tests/test_regressions.py` + `tests/test_property.py`，**93 个测试**，0.4 秒跑完）。
 
 这不是"顺手加的测试"，这是这个项目**最有价值的资产**。因为如果这些测试不存在，下一个人随时可能把它们改回去，而你永远不会知道。
 
@@ -245,7 +245,7 @@ AssertionError: 23.65 not less than 0.025
 - **真实行情数据** — 腾讯 ifzq（A股/港股）+ 新浪（美股全历史），自动分页 + 本地缓存
 - **完整绩效指标** — CAGR / Vol / Sharpe / Sortino / Calmar / 最大回撤区间定位 / 年度收益链式还原
 - **双窗口诚实口径** — 强制区分"可执行"与"长周期代理"
-- **回归测试钉死每个历史缺陷** — 77 个测试（策略 17 + 房产 35 + 有效性 25），0.4 秒
+- **回归测试钉死每个历史缺陷** — 93 个测试（策略 17 + 房产 35 + 有效性 25 + 沙盒 16），0.4 秒
 - **交互式面板** — 13 策略同屏净值/回撤对比，图例可开关，表格可排序，中英双语
 - **房产模块：持币 vs 持房** — 月供摊还、租金税费、空置损耗、买卖税费全建模；
   输出保本租金、保本房价年化、一次性跌幅，以及「房价 × 租金 × 利率」敏感性网格
@@ -292,7 +292,7 @@ PYTHONPATH=src python3 -m vlab serve
 brew tap aazh2026/vlab
 brew install aazh2026/vlab/vlab
 
-vlab test          # 跑 77 个回归测试
+vlab test          # 跑 93 个回归测试
 vlab fetch && vlab report && vlab serve
 ```
 
@@ -307,7 +307,7 @@ Formula 位于 [`aazh2026/homebrew-vlab`](https://github.com/aazh2026/homebrew-v
 pip install https://github.com/aazh2026/vlab/releases/download/v1.1.1/vlab-1.1.1-py3-none-any.whl
 
 vlab --help
-vlab test          # 77 个回归测试
+vlab test          # 93 个回归测试
 ```
 
 PyPI 上架后即为 `pip install vlab`。
@@ -563,7 +563,7 @@ MIT © 2026 [aazh2026](https://github.com/aazh2026)
 
 If **any** of these apply, this repo is directly useful to you:
 
-- **You have written your own backtest script** — the 77 regression tests are effectively a checklist of the traps, and you can diff your code against it
+- **You have written your own backtest script** — the 93 regression tests are effectively a checklist of the traps, and you can diff your code against it
 - **You believe the numbers but not the methodology** — dual windows that must never be mixed, uninvestable weight left in cash, no silent renormalisation: each of those can change your conclusion
 - **You work on allocation or portfolio management** — 26 strategy curves, a sortable performance table, and chained yearly returns you can lift straight into an internal dashboard
 - **You were about to write your own backtest engine** — don't. Pure standard library, zero dependencies, `git clone` and run
@@ -613,7 +613,7 @@ The project was originally built to answer one question: **for the same money, i
 ## Quick start
 
 ```bash
-python3 -m unittest discover -s tests -v      # 77 tests, no deps, no network
+python3 -m unittest discover -s tests -v      # 93 tests, no deps, no network
 PYTHONPATH=src python3 -m vlab fetch          # download quotes (~7MB, cached)
 PYTHONPATH=src python3 -m vlab report         # build the report
 PYTHONPATH=src python3 -m vlab serve          # dashboard on :8765

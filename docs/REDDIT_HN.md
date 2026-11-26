@@ -61,7 +61,7 @@ Live dashboard: https://postcodeengineering.com/vlab/
 
 - Python standard library only, zero runtime dependencies
 - Zero CDN, single-file dashboard that opens offline
-- 77 regression tests, CI on Python 3.9–3.12
+- 93 regression tests, CI on Python 3.9–3.12
 - Includes a cash-vs-house module (mortgage amortisation, rent tax, vacancy,
   break-even rent, and a price × rent × rate sensitivity grid) — it ingests no
   listing data, because asking prices are not transaction prices
@@ -139,7 +139,7 @@ Three other things worth stealing:
    constant at 100 and distributions come as units, so price series show
    literally 0% return. Synthesise the yield.
 
-77 tests, ~0.3s, CI across Python 3.9–3.12.
+93 tests, ~0.3s, CI across Python 3.9–3.12.
 
 Repo: https://github.com/aazh2026/vlab
 Live dashboard: https://postcodeengineering.com/vlab/
@@ -272,7 +272,7 @@ additions turned out to be worthless (a gold-banding overlay adds ~0.3pp of
 CAGR; an MA200 trend layer measurably does nothing) and are documented as
 such rather than quietly kept.
 
-77 regression tests, ~0.3s, CI on Python 3.9–3.12.
+93 regression tests, ~0.3s, CI on Python 3.9–3.12.
 
 There's also a cash-vs-house module (mortgage amortisation, rent tax,
 vacancy, break-even rent, price × rent × rate sensitivity grid). It ingests
