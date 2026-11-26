@@ -290,7 +290,7 @@ PYTHONPATH=src python3 -m vlab serve
 
 ```bash
 brew tap aazh2026/vlab
-brew install vlab
+brew install aazh2026/vlab/vlab
 
 vlab test          # 跑 77 个回归测试
 vlab fetch && vlab report && vlab serve
