@@ -260,5 +260,69 @@ class TestCashInterest(unittest.TestCase):
         self.assertGreater(res2["interest_earned"], 0.0)
 
 
+class TestFxConversion(unittest.TestCase):
+    """汇率换算（BUG-5：美元价曾被当作人民币直接相加）。"""
+
+    def test_load_fx_reads_cache(self):
+        from vlab import engine as E
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "data")
+        fx = E.load_fx(data_dir)
+        if not fx:
+            self.skipTest("no cached fx data")
+        self.assertTrue(all(v > 0 for v in fx.values()))
+
+    def test_fx_series_forward_fills(self):
+        from vlab import engine as E
+        fx = {"2020-01-02": 7.0, "2020-01-06": 6.9}
+        col = E._fx_series(["2020-01-02", "2020-01-03", "2020-01-06"], fx)
+        self.assertEqual(col, [7.0, 7.0, 6.9])
+
+    def test_fx_series_empty_fx_is_all_none(self):
+        from vlab import engine as E
+        self.assertEqual(E._fx_series(["2020-01-02"], {}), [None])
+
+    def test_us_assets_are_converted_when_fx_present(self):
+        """有汇率时，美股价格必须被换算成人民币口径。"""
+        from vlab import engine as E
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "data")
+        if not E.load_fx(data_dir):
+            self.skipTest("no cached fx data")
+        raw = E.load_series(data_dir=data_dir, use_fx=False)
+        conv = E.load_series(data_dir=data_dir, use_fx=True)
+        us = [c for c in raw if c.startswith("us")]
+        if not us:
+            self.skipTest("no us assets cached")
+        c = us[0]
+        # 汇率数据起点是 2001-09-09；更早的美股价格**无法**换算，
+        # 引擎会保留原始美元价（这是已知边界，不是 bug）。
+        # 因此必须挑一个汇率起点之后的点来断言换算生效。
+        fx_start = min(E.load_fx(data_dir))
+        pairs = list(zip(raw[c], conv[c]))
+        after = [(a, b) for a, b in pairs if a[0] >= fx_start]
+        if not after:
+            self.skipTest("no us quotes after fx start")
+        (d0, p0), (d1, p1) = after[0]
+        self.assertEqual(d0, d1)
+        self.assertNotAlmostEqual(p0, p1, places=6)
+        self.assertGreater(p1, 0)
+
+    def test_cn_assets_untouched_by_fx(self):
+        """A 股资产不得被汇率换算。"""
+        from vlab import engine as E
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "data")
+        if not E.load_fx(data_dir):
+            self.skipTest("no cached fx data")
+        raw = E.load_series(data_dir=data_dir, use_fx=False)
+        conv = E.load_series(data_dir=data_dir, use_fx=True)
+        cn = [c for c in raw if not c.startswith("us")]
+        if not cn:
+            self.skipTest("no cn assets cached")
+        c = cn[0]
+        self.assertEqual(raw[c][0], conv[c][0])
+
+
 if __name__ == "__main__":
     unittest.main()

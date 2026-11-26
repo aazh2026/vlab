@@ -175,6 +175,75 @@ def sina_cn(sym: str, start: str = DEFAULT_START,
     return _dedupe(out, start)
 
 
+
+# --------------------------------------------------------------------------
+# 汇率（USD -> CNY）
+# --------------------------------------------------------------------------
+def yahoo_fx(symbol: str = "CNY=X", start: str = DEFAULT_START,
+             end: str = DEFAULT_END) -> List[dict]:
+    """抓取汇率日线（Yahoo Finance chart API）。
+
+    ``symbol`` 用 Yahoo 的写法：``CNY=X`` 表示 1 美元 = X 人民币。
+    Yahoo 的 chart 接口需要 Unix 时间戳，这里做一次换算。
+    """
+    import calendar
+    import datetime as _dt
+
+    def _ts(d: str) -> int:
+        y, m, dd = int(d[:4]), int(d[5:7]), int(d[8:10])
+        return calendar.timegm(_dt.datetime(y, m, dd).timetuple())
+
+    url = ("https://query1.finance.yahoo.com/v8/finance/chart/%s"
+           "?period1=%d&period2=%d&interval=1d"
+           % (symbol, _ts(start), _ts(end)))
+    # Yahoo 会对短时间内的重复请求返回 429 / "Too Many Requests"。
+    # 退避重试，而不是直接放弃 —— 汇率是 USD 资产能否正确换算的前提。
+    node = None
+    for attempt in range(4):
+        raw = _curl(url)
+        if "Too Many Requests" in raw[:64] or raw.strip() == "":
+            time.sleep(2.0 * (attempt + 1))
+            continue
+        try:
+            node = json.loads(raw)["chart"]["result"][0]
+            break
+        except Exception:
+            time.sleep(1.0 * (attempt + 1))
+    if node is None:
+        return []
+    out: List[dict] = []
+    for t, c in zip(ts, closes):
+        if c is None:
+            continue
+        try:
+            day = _dt.datetime.utcfromtimestamp(t).strftime("%Y-%m-%d")
+            out.append({"d": day, "o": float(c), "c": float(c),
+                        "h": float(c), "l": float(c), "v": 0.0})
+        except Exception:
+            continue
+    return _dedupe(out, start)
+
+
+def fetch_fx(data_dir: str, start: str = DEFAULT_START,
+             end: str = DEFAULT_END, force: bool = False) -> List[dict]:
+    """抓取并缓存 USDCNY 汇率（``fx_usdcny.json``）。"""
+    os.makedirs(data_dir, exist_ok=True)
+    path = os.path.join(data_dir, "fx_usdcny.json")
+    if not force and os.path.exists(path):
+        try:
+            with open(path) as f:
+                rows = json.load(f)
+            if rows:
+                return rows
+        except Exception:
+            pass
+    rows = yahoo_fx("CNY=X", start, end)
+    if rows:
+        rows.sort(key=lambda x: x["d"])
+        with open(path, "w") as f:
+            json.dump(rows, f)
+    return rows
+
 def _dedupe(rows: List[dict], start: str) -> List[dict]:
     seen = {r["d"]: r for r in rows}
     res = [seen[k] for k in sorted(seen)]
@@ -210,7 +279,9 @@ def fetch(symbol: str, data_dir: str, start: str = DEFAULT_START,
 
     rows: List[dict] = []
     try:
-        if symbol.startswith("ix"):
+        if symbol in ("fx_usdcny", "USDCNY", "fxusdcny"):
+            rows = yahoo_fx("CNY=X", start, end)
+        elif symbol.startswith("ix"):
             rows = tencent_index(symbol[2:], start, end)
         elif symbol.startswith("us"):
             name = symbol[2:].split(".")[0]

@@ -134,10 +134,66 @@ def apply_dividend_approx(rows: List[dict], annual_yield: float) -> List[tuple]:
     ]
 
 
-def load_series(codes: Optional[Iterable[str]] = None, data_dir: Optional[str] = None) -> Dict[str, List[tuple]]:
+
+# --------------------------------------------------------------------------
+# 汇率（USD -> CNY）
+# --------------------------------------------------------------------------
+#: 需要做汇率换算的资产前缀（价格以美元计价）
+FX_PREFIXES = ("us",)
+
+
+def load_fx(data_dir: str) -> Dict[str, float]:
+    """读取缓存的 USDCNY 汇率，返回 ``{date: rate}``。
+
+    汇率缺失时返回空 dict —— 引擎会退化成"不做换算"，
+    但这个退化**必须被披露**，不能静默（见 ``fx_missing``）。
+    """
+    import json as _json
+    import os as _os
+
+    path = _os.path.join(data_dir, "fx_usdcny.json")
+    if not _os.path.exists(path):
+        return {}
+    try:
+        with open(path) as f:
+            rows = _json.load(f)
+    except Exception:
+        return {}
+    out: Dict[str, float] = {}
+    for r in rows or []:
+        try:
+            out[r["d"]] = float(r["c"])
+        except Exception:
+            continue
+    return out
+
+
+def _fx_series(dates: Sequence[str], fx: Dict[str, float]) -> List[Optional[float]]:
+    """把汇率对齐到交易日轴（forward-fill；缺失日不虚构）。"""
+    if not fx:
+        return [None] * len(dates)
+    keys = sorted(fx)
+    out: List[Optional[float]] = []
+    ki = 0
+    last = None
+    for d in dates:
+        while ki < len(keys) and keys[ki] <= d:
+            last = fx[keys[ki]]
+            ki += 1
+        out.append(last)
+    return out
+
+
+def load_series(codes: Optional[Iterable[str]] = None, data_dir: Optional[str] = None,
+                use_fx: bool = True) -> Dict[str, List[tuple]]:
     """读取本地缓存行情并加工成 ``{code: [(date, close), ...]}``。
 
     缺货/未上市资产会被自动跳过；调用方需自行确认资产实际可用区间。
+
+    ``use_fx``
+        是否把美元计价的资产换算成人民币（用缓存的 USDCNY 汇率）。
+        关闭或缺少汇率缓存时**退化为不换算** —— 这是已知偏差，
+        详见 README 的"已知局限"。
     """
     import json
     import os
@@ -149,6 +205,7 @@ def load_series(codes: Optional[Iterable[str]] = None, data_dir: Optional[str] =
         )
     codes = list(codes or [c for c, *_ in UNIVERSE])
     out: Dict[str, List[tuple]] = {}
+    fx = load_fx(data_dir) if use_fx else {}
     for c in codes:
         key = c.replace(":", "_").replace(".", "_")
         path = os.path.join(data_dir, key + ".json")
@@ -167,6 +224,17 @@ def load_series(codes: Optional[Iterable[str]] = None, data_dir: Optional[str] =
             out[c] = apply_dividend_approx(rows, DIVY[c])
         else:
             out[c] = [(r["d"], float(r["c"])) for r in rows]
+
+    # ---- 汇率换算：美元价 → 人民币价 ----
+    if fx:
+        for c in list(out.keys()):
+            if not c.startswith(FX_PREFIXES):
+                continue
+            col = _fx_series([d for d, _ in out[c]], fx)
+            conv = []
+            for (d, px), rate in zip(out[c], col):
+                conv.append((d, px * rate) if rate else (d, px))
+            out[c] = conv
     return out
 
 
