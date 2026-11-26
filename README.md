@@ -12,7 +12,7 @@
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
 [![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://postcodeengineering.com/vlab/)
 [![Release](https://img.shields.io/github/v/release/aazh2026/vlab.svg)](https://github.com/aazh2026/vlab/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-52%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-77%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
 [![Last Commit](https://img.shields.io/github/last-commit/aazh2026/vlab)](https://github.com/aazh2026/vlab/commits/main)
 [![Discussions](https://img.shields.io/github/discussions/aazh2026/vlab?label=Discussion)](https://github.com/aazh2026/vlab/discussions)
 
@@ -545,7 +545,7 @@ MIT © 2026 [aazh2026](https://github.com/aazh2026)
 
 If **any** of these apply, this repo is directly useful to you:
 
-- **You have written your own backtest script** — the 52 regression tests are effectively a checklist of the traps, and you can diff your code against it
+- **You have written your own backtest script** — the 77 regression tests are effectively a checklist of the traps, and you can diff your code against it
 - **You believe the numbers but not the methodology** — dual windows that must never be mixed, uninvestable weight left in cash, no silent renormalisation: each of those can change your conclusion
 - **You work on allocation or portfolio management** — 26 strategy curves, a sortable performance table, and chained yearly returns you can lift straight into an internal dashboard
 - **You were about to write your own backtest engine** — don't. Pure standard library, zero dependencies, `git clone` and run
@@ -593,7 +593,7 @@ The project was originally built to answer one question: **for the same money, i
 ## Quick start
 
 ```bash
-python3 -m unittest discover -s tests -v      # 52 tests, no deps, no network
+python3 -m unittest discover -s tests -v      # 77 tests, no deps, no network
 PYTHONPATH=src python3 -m vlab fetch          # download quotes (~7MB, cached)
 PYTHONPATH=src python3 -m vlab report         # build the report
 PYTHONPATH=src python3 -m vlab serve          # dashboard on :8765
