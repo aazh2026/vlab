@@ -12,7 +12,7 @@
 [![Deps](https://img.shields.io/badge/dependencies-0-success.svg)](https://pypi.org/)
 [![Pages](https://img.shields.io/badge/demo-live-brightgreen.svg)](https://postcodeengineering.com/vlab/)
 [![Release](https://img.shields.io/github/v/release/aazh2026/vlab.svg)](https://github.com/aazh2026/vlab/releases/latest)
-[![Tests](https://img.shields.io/badge/tests-93%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-102%20passing-3ddc97)](https://github.com/aazh2026/vlab/actions/workflows/ci.yml)
 [![Last Commit](https://img.shields.io/github/last-commit/aazh2026/vlab)](https://github.com/aazh2026/vlab/commits/main)
 [![Discussions](https://img.shields.io/github/discussions/aazh2026/vlab?label=Discussion)](https://github.com/aazh2026/vlab/discussions)
 
@@ -51,7 +51,7 @@ If this repo saved you from a silently broken backtest, a ⭐ is the most direct
 
 如果你符合下面**任意一条**，这个仓库对你有直接价值：
 
-- **你写过自己的回测脚本** —— 这里的 93 个回归测试就是一份「常见坑清单」，可以直接拿去对照你的代码
+- **你写过自己的回测脚本** —— 这里的 102 个回归测试就是一份「常见坑清单」，可以直接拿去对照你的代码
 - **你相信"回测数字"但不确定口径** —— 双窗口强制分离、不可投资部分留在现金、超额权重不归一化，这三条会改变你的结论
 - **你在做资产配置 / 组合管理** —— 面板里 26 条策略曲线 + 可排序绩效表 + 年度收益链式还原，复制粘贴就能当内部看板
 - **你在评估要不要自己写个回测引擎** —— 别写。这个仓库是纯标准库、零依赖、可以直接 `git clone` 跑起来的
@@ -82,7 +82,7 @@ If this repo saved you from a silently broken backtest, a ⭐ is the most direct
 | **货币 ETF 收益蒸发** | 净值恒定 100、收益以份额派发 → "全现金"年化显示 **0%**（真实 1.67%） | 按 1.8% 年化合成 |
 | **权重过度归一化** | 未上市资产的权重被挤到少数可交易资产 → 制造出虚假的 **-30% 单年跌幅** | 超额权重留在现金 |
 
-**这些 bug 现在每一个都有专门的回归测试钉死**（`tests/test_regressions.py` + `tests/test_property.py`，**93 个测试**，0.4 秒跑完）。
+**这些 bug 现在每一个都有专门的回归测试钉死**（`tests/test_regressions.py` + `tests/test_property.py`，**102 个测试**，0.4 秒跑完）。
 
 这不是"顺手加的测试"，这是这个项目**最有价值的资产**。因为如果这些测试不存在，下一个人随时可能把它们改回去，而你永远不会知道。
 
@@ -245,7 +245,7 @@ AssertionError: 23.65 not less than 0.025
 - **真实行情数据** — 腾讯 ifzq（A股/港股）+ 新浪（美股全历史），自动分页 + 本地缓存
 - **完整绩效指标** — CAGR / Vol / Sharpe / Sortino / Calmar / 最大回撤区间定位 / 年度收益链式还原
 - **双窗口诚实口径** — 强制区分"可执行"与"长周期代理"
-- **回归测试钉死每个历史缺陷** — 93 个测试（策略 17 + 房产 35 + 有效性 25 + 沙盒 16），0.4 秒
+- **回归测试钉死每个历史缺陷** — 102 个测试（策略 17 + 房产 35 + 有效性 25 + 沙盒 25），0.4 秒
 - **交互式面板** — 13 策略同屏净值/回撤对比，图例可开关，表格可排序，中英双语
 - **房产模块：持币 vs 持房** — 月供摊还、租金税费、空置损耗、买卖税费全建模；
   输出保本租金、保本房价年化、一次性跌幅，以及「房价 × 租金 × 利率」敏感性网格
@@ -292,7 +292,7 @@ PYTHONPATH=src python3 -m vlab serve
 brew tap aazh2026/vlab
 brew install aazh2026/vlab/vlab
 
-vlab test          # 跑 93 个回归测试
+vlab test          # 跑 102 个回归测试
 vlab fetch && vlab report && vlab serve
 ```
 
@@ -307,7 +307,7 @@ Formula 位于 [`aazh2026/homebrew-vlab`](https://github.com/aazh2026/homebrew-v
 pip install https://github.com/aazh2026/vlab/releases/download/v1.1.1/vlab-1.1.1-py3-none-any.whl
 
 vlab --help
-vlab test          # 93 个回归测试
+vlab test          # 102 个回归测试
 ```
 
 PyPI 上架后即为 `pip install vlab`。
@@ -534,12 +534,10 @@ PYTHONPATH=src python3 -m vlab validate examples/momentum_rotation.py
 | **网格搜索最优解过拟合** | 样本外衰减 -0.45，该结论已弃用 |
 | **ETF 早期历史依赖指数代理** | 窗口 B 用指数代替尚未上市的 ETF，属代理而非真实可投 |
 | **不含税费** | A 股红利税、基金赎回费、股息预扣税均未建模 |
-| **闲置现金默认不计息** | 引擎默认 `cash_apy=0`（保守口径）。面板曾显示"按货币基金计息"却从未计息 —— 该谎话已删除，改为显式的"闲置现金年化利率"输入框（默认 0%），并在结果里如实披露利息金额 |
-| **美股未做汇率换算** | 美元价格与人民币价格被当作同一"元"直接相加。Steve 配置含 15% 美股权重，人民币升值/贬值会系统性地高估/低估这部分收益 —— **这是当前最大的单一未修偏差** |
-
-> 汇率缺失的实测影响方向：2019-01 → 2026-11 期间 USDCNY 从约 6.75 升至约 7.1，
-> 美元资产的人民币计价收益被低估约 5%。修复前，所有含美股权重的结论都应视为
-> **保守**（偏向低估），但这是"碰巧"而非"设计"，不得依赖。
+| **闲置现金默认不计息** | 引擎默认 `cash_apy=0`（保守口径）。面板曾显示"按货币基金计息"却从未计息 —— 该谎话已删除，改为显式的"闲置现金年化利率"输入框（默认 0%），并在结果里如实披露利息金额。实测影响：50/50 配置在窗口 A 上 0 息 → 2.29% 年化，1.8% → 3.21%（差 0.92pp / 9.4 万元） |
+| **美元资产已做汇率换算** | ✅ 已修复：`engine.load_series()` 用缓存的 USDCNY（Yahoo `CNY=X`，6342 个日点）把美元价换算成人民币。Steve 配置实测：年化 7.85% → **7.87%**，回撤 -8.97% → **-8.88%**。影响不大是因为人民币贬值与美股走弱部分抵消 |
+| **汇率数据起点 2001-09-09** | 早于该日的美股报价（SPY/IWM/QQQ 早期历史）无汇率可用，保留原始美元价 |
+| **美股股息仍是固定年化率近似** | 引擎按 SPY 1.3% / XLF 2.2% / QQQ 0.6% / AGG 2.0% / IWM 1.4% 调整原始价格，非精确股息再投资。这是**当前最大的剩余数据近似** |
 
 ---
 
@@ -569,7 +567,7 @@ MIT © 2026 [aazh2026](https://github.com/aazh2026)
 
 If **any** of these apply, this repo is directly useful to you:
 
-- **You have written your own backtest script** — the 93 regression tests are effectively a checklist of the traps, and you can diff your code against it
+- **You have written your own backtest script** — the 102 regression tests are effectively a checklist of the traps, and you can diff your code against it
 - **You believe the numbers but not the methodology** — dual windows that must never be mixed, uninvestable weight left in cash, no silent renormalisation: each of those can change your conclusion
 - **You work on allocation or portfolio management** — 26 strategy curves, a sortable performance table, and chained yearly returns you can lift straight into an internal dashboard
 - **You were about to write your own backtest engine** — don't. Pure standard library, zero dependencies, `git clone` and run
@@ -619,7 +617,7 @@ The project was originally built to answer one question: **for the same money, i
 ## Quick start
 
 ```bash
-python3 -m unittest discover -s tests -v      # 93 tests, no deps, no network
+python3 -m unittest discover -s tests -v      # 102 tests, no deps, no network
 PYTHONPATH=src python3 -m vlab fetch          # download quotes (~7MB, cached)
 PYTHONPATH=src python3 -m vlab report         # build the report
 PYTHONPATH=src python3 -m vlab serve          # dashboard on :8765
