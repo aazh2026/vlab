@@ -255,6 +255,14 @@ AssertionError: 23.65 not less than 0.025
 
 ---
 
+## 📖 延伸阅读
+
+- **[回测数字最危险的地方：它看起来太像真的了](https://postcodeengineering.com/backtest-validity/)**
+  — 四个能反转结论的引擎缺陷、防未来函数护栏、以及样本外有效性检验的实测。
+  英文：[The most dangerous part of a backtest is that it looks too real](https://postcodeengineering.com/backtest-validity/)
+
+---
+
 ## 快速开始 / Quick start
 
 **方式一：从源码运行（无需安装，无需联网）**
@@ -592,6 +600,12 @@ PYTHONPATH=src python3 -m vlab serve          # dashboard on :8765
 ```
 
 Live demo: <https://postcodeengineering.com/vlab/>
+
+## Further reading
+
+- **[The most dangerous part of a backtest is that it looks too real](https://postcodeengineering.com/backtest-validity/)**
+  — the four engine bugs that each inverted the conclusion, the look-ahead guard,
+  and a measured out-of-sample validity check.
 
 ## License
 
