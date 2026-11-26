@@ -39,7 +39,9 @@ DEFAULT_END = "2099-12-31"
 
 
 def _curl(url: str, referer: Optional[str] = None) -> str:
-    cmd = ["curl", "-s", "-m", "25", "-A", UA]
+    # -L 跟随重定向：frankfurter 等源会 301 到最终地址，
+    # 不跟随就会拿到一段 HTML 而不是 JSON。
+    cmd = ["curl", "-sL", "-m", "25", "-A", UA]
     if referer:
         cmd += ["-H", "Referer: " + referer]
     cmd.append(url)
@@ -179,6 +181,35 @@ def sina_cn(sym: str, start: str = DEFAULT_START,
 # --------------------------------------------------------------------------
 # 汇率（USD -> CNY）
 # --------------------------------------------------------------------------
+
+def frankfurter_fx(start: str = DEFAULT_START, end: str = DEFAULT_END) -> List[dict]:
+    """抓取 ECB 参考汇率 USD/CNY（frankfurter.app）。
+
+    为什么不只靠 Yahoo：Yahoo 的 chart 接口在 CI 机房 IP 上会返回
+    429 "Too Many Requests"，导致每日刷新失败（实测 2026-11-26）。
+    frankfurter 无需 API key、无明显限流，且历史可回溯到 1999 年。
+
+    注意：ECB 参考汇率只在**工作日**更新，因此这个序列在周末与
+    节假日是平的 —— 这与真实的离岸汇率（CNY=X）略有差异，
+    但用于把美元资产折算成人民币口径是标准做法。
+    """
+    url = ("https://api.frankfurter.app/%s..%s?from=USD&to=CNY"
+           % (start, end))
+    try:
+        d = json.loads(_curl(url))
+        rates = d.get("rates") or {}
+    except Exception:
+        return []
+    out: List[dict] = []
+    for day in sorted(rates):
+        try:
+            c = float(rates[day]["CNY"])
+        except Exception:
+            continue
+        out.append({"d": day, "o": c, "c": c, "h": c, "l": c, "v": 0.0})
+    return out
+
+
 def yahoo_fx(symbol: str = "CNY=X", start: str = DEFAULT_START,
              end: str = DEFAULT_END) -> List[dict]:
     """抓取汇率日线（Yahoo Finance chart API）。
@@ -237,7 +268,11 @@ def fetch_fx(data_dir: str, start: str = DEFAULT_START,
                 return rows
         except Exception:
             pass
-    rows = yahoo_fx("CNY=X", start, end)
+    # 主源：frankfurter（ECB 参考汇率，CI 机房 IP 不会 429）
+    rows = frankfurter_fx(start, end)
+    # 兜底：Yahoo
+    if len(rows) < 200:
+        rows = yahoo_fx("CNY=X", start, end)
     if rows:
         rows.sort(key=lambda x: x["d"])
         with open(path, "w") as f:
@@ -280,7 +315,9 @@ def fetch(symbol: str, data_dir: str, start: str = DEFAULT_START,
     rows: List[dict] = []
     try:
         if symbol in ("fx_usdcny", "USDCNY", "fxusdcny"):
-            rows = yahoo_fx("CNY=X", start, end)
+            rows = frankfurter_fx(start, end)
+            if len(rows) < 200:
+                rows = yahoo_fx("CNY=X", start, end)
         elif symbol.startswith("ix"):
             rows = tencent_index(symbol[2:], start, end)
         elif symbol.startswith("us"):
