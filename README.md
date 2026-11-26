@@ -296,7 +296,7 @@ vlab test          # 跑 77 个回归测试
 vlab fetch && vlab report && vlab serve
 ```
 
-Formula 位于 [`aazh2026/homebrew-tap`](https://github.com/aazh2026/homebrew-tap)，当前追踪 **v1.1.1**。
+Formula 位于 [`aazh2026/homebrew-vlab`](https://github.com/aazh2026/homebrew-vlab)，当前追踪 **v1.1.1**。
 
 **方式三：pip 安装（零依赖，Python 3.9+）**
 
